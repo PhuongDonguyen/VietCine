@@ -1,47 +1,65 @@
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useEffect, useState } from "react";
+
+interface Genre {
+    id: string,
+    name: string
+}
 
 interface Movie {
     id: string;
     title: string;
-    poster: string;
+    posterUrl: string;
     rating: string;
-    categories: string[];
+    genres: Genre[];
 }
 
 export function FeaturedMovies() {
     const navigate = useNavigate();
+    const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Mock data for featured movies
-    const featuredMovies: Movie[] = [
-        {
-            id: "1",
-            title: "Lật Mặt 7: Một Điều Ước",
-            poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2525&q=80",
-            rating: "9.2",
-            categories: ["Hành Động", "Hài"]
-        },
-        {
-            id: "2",
-            title: "Mai",
-            poster: "https://images.unsplash.com/photo-1616530940355-351fabd9524b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1935&q=80",
-            rating: "8.7",
-            categories: ["Tình Cảm", "Tâm Lý"]
-        },
-        {
-            id: "3",
-            title: "Gặp Lại Chị Bầu",
-            poster: "https://images.unsplash.com/photo-1604975701397-6365ccbd028a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2574&q=80",
-            rating: "7.8",
-            categories: ["Hài", "Gia Đình"]
-        },
-        {
-            id: "4",
-            title: "Quỷ Cẩu",
-            poster: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2670&q=80",
-            rating: "8.5",
-            categories: ["Kinh Dị", "Tâm Lý"]
-        }
-    ];
+    useEffect(() => {
+        const fetchFeaturedMovies = async () => {
+            try {
+                const response = await axios.get("http://localhost:8081/api/movies/available");
+                setFeaturedMovies(response.data.data);
+                setLoading(false);
+            } catch (err) {
+                setError("Failed to fetch featured movies");
+                setLoading(false);
+                console.error("Error fetching featured movies:", err);
+            }
+        };
+
+        fetchFeaturedMovies();
+    }, []);
+
+    if (loading) {
+        return (
+            <section className="py-16 bg-black">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-center items-center h-64">
+                        <div className="text-white">Loading featured movies...</div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    if (error) {
+        return (
+            <section className="py-16 bg-black">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-center items-center h-64">
+                        <div className="text-red-500">{error}</div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="py-16 bg-black">
@@ -66,7 +84,7 @@ export function FeaturedMovies() {
                         >
                             <div className="aspect-[2/3] overflow-hidden rounded-lg">
                                 <img
-                                    src={movie.poster}
+                                    src={movie.posterUrl}
                                     alt={movie.title}
                                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                                 />
@@ -77,8 +95,8 @@ export function FeaturedMovies() {
                             <div className="mt-2">
                                 <h3 className="text-lg font-semibold text-white group-hover:text-red-500 transition duration-300">{movie.title}</h3>
                                 <div className="flex flex-wrap mt-1">
-                                    {movie.categories.map((category, index) => (
-                                        <span key={index} className="text-xs text-gray-400 mr-2">{category}</span>
+                                    {movie.genres.map((genre, index) => (
+                                        <span key={index} className="text-xs text-gray-400 mr-2">{index != 0 ? genre.name.toLowerCase(): genre.name} {index == 0 && ', '}</span>
                                     ))}
                                 </div>
                             </div>

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { FaGoogle, FaFacebook } from "react-icons/fa"; // Import Google and Facebook icons
+import useGoogleAuth from "../hook/useGoogleAuth";
 
 interface AuthFormProps {
     isLogin: boolean;
@@ -15,6 +17,7 @@ export function AuthForm({ isLogin, onToggleForm }: AuthFormProps) {
         email: "",
         password: ""
     });
+    const { signInWithGoogle } = useGoogleAuth();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -26,15 +29,22 @@ export function AuthForm({ isLogin, onToggleForm }: AuthFormProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Here we would handle actual form submission with API calls
         console.log("Form submitted:", formData);
-
-        // Navigate to home page for demo purposes
-        navigate("/");
+        navigate("/"); // For demo purposes
     };
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
+    };
+
+    const handleGoogleLogin = () => {
+        console.log("Google login clicked!");
+        signInWithGoogle();
+    };
+
+    const handleFacebookLogin = () => {
+        // Handle Facebook login here
+        console.log("Facebook login clicked!");
     };
 
     return (
@@ -150,26 +160,24 @@ export function AuthForm({ isLogin, onToggleForm }: AuthFormProps) {
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
+                    {/* Google Login Button */}
                     <a
                         href="#"
+                        onClick={handleGoogleLogin}
                         className="w-full inline-flex justify-center py-2 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-300 hover:bg-gray-700 transition duration-300"
                     >
                         <span className="sr-only">Đăng nhập với Google</span>
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12.545 12.151L12.545 12.151L12.545 12.151C12.545 9.401 9.401 9.401 9.401 9.401H5.441V14.719H9.401C9.401 14.719 12.545 14.719 12.545 12.151Z" fill="#2196F3"></path>
-                            <path d="M9.401 15.912H5.441V21.229H9.401C9.401 21.229 14.331 21.229 14.331 18.571C14.331 15.912 12.605 15.912 9.401 15.912Z" fill="#0D47A1"></path>
-                            <path d="M20.274 10.983C21.492 10.165 21.492 8.233 20.274 7.415L15.99 4.743C14.773 3.925 13.237 4.841 13.237 6.289L13.237 12.109C13.237 13.557 14.773 14.473 15.99 13.655L20.274 10.983Z" fill="#4CAF50"></path>
-                            <path d="M5.441 7.873H9.401C12.605 7.873 14.331 5.214 14.331 2.556C14.331 -0.102 9.401 -0.102 9.401 -0.102H5.441V7.873Z" fill="#F44336"></path>
-                        </svg>
+                        <FaGoogle className="w-5 h-5" />
                     </a>
+
+                    {/* Facebook Login Button */}
                     <a
                         href="#"
+                        onClick={handleFacebookLogin}
                         className="w-full inline-flex justify-center py-2 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-300 hover:bg-gray-700 transition duration-300"
                     >
                         <span className="sr-only">Đăng nhập với Facebook</span>
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                        </svg>
+                        <FaFacebook className="w-5 h-5" />
                     </a>
                 </div>
             </div>
