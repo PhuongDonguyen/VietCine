@@ -1,0 +1,72 @@
+package com.vietcine.moviebooking_server.config;
+
+import com.vietcine.moviebooking_server.security.AuthenticationFilter;
+import com.vietcine.moviebooking_server.security.UserDetailService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+public class SecurityConfig {
+
+    @Autowired
+    private AuthenticationFilter authFilter;
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return new UserDetailService();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+//                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class) // Add Firebase authentication filter
+//                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) // Add custom filter
+                .addFilterAfter(authFilter, UsernamePasswordAuthenticationFilter.class) // Add JWT authentication filter
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/movies/**").permitAll() // Allow access to movie endpoints
+                        .requestMatchers("/api/genres/**").permitAll() // Allow access to genre endpoints
+                        .requestMatchers("/api/showtimes/**").permitAll() // Allow access to showtime endpoints
+                        .requestMatchers("/api/users/**").permitAll() // Allow access to user endpoints
+                        .requestMatchers("/api/seats/**").permitAll()
+                        .requestMatchers("api/seattypes/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No session
+                .authenticationProvider(authenticationProvider()) // Use custom authentication provider
+                .build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(authenticationProvider());
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService());
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
