@@ -146,7 +146,7 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
 
           <button
             className="px-4 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300"
-            onClick={() => navigate("/movies")}
+            onClick={() => navigate("/book-tickets")}
           >
             Mua vé
           </button>

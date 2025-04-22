@@ -1,5 +1,6 @@
 package com.vietcine.moviebooking_server.controller;
 
+import com.cloudinary.Cloudinary;
 import com.vietcine.moviebooking_server.dto.response.APIResponse;
 import com.vietcine.moviebooking_server.dto.response.UserResponse;
 import com.vietcine.moviebooking_server.service.user.UserService;

@@ -8,6 +8,7 @@ import Profile from './pages/Profile';
 import { AuthContextProvider } from './context/authContext';
 import Signup from './pages/Signup';
 import AllAvailableMovie from './pages/AllAvailableMovie';
+import Theaters from './pages/MovieShowtimesTheater';
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
   {
     element: <Profile />,
     path: '/my-tickets'
+  },
+  {
+    element: <Theaters />,
+    path: '/book-tickets'
   }
 ])
 
