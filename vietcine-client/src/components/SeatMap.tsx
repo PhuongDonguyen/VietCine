@@ -1,30 +1,36 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+interface SelectedSeat {
+    SeatId: number;
+    SeatNumber: string;
+    seatTypeId?: number;  // Added seatTypeId property
+    price?: number;       // Added price property
+}
+
 interface Props {
     showtimeId: string;
-    selectedSeats: string[];
-    onSeatToggle: (seatId: string) => void;
+    selectedSeats: SelectedSeat[];
+    onSeatToggle: (seatId: number, seatNumber: string, seatTypeId: number) => void;  // Updated to include seatTypeId
 }
 
 interface Seat {
-    seatId: string;
-    column: number;
+    seatId: number;
     row: string;
-    typeName: string;
-    price: number;
-    status: "available" | "occupied";
+    column: number;
+    bookingId: number | null;
+    showtimeId: number;
+    seatTypeId: number;
+    screenId: number;
+    available: boolean;
 }
 
 interface SeatType {
     seatTypeId: number;
     typeName: string;
-}
-
-interface Screen {
-    screenId: number;
-    screenNumber: string;
-    name: string;
+    price: number;
+    priceIncrease: number;
+    totalPrice: number;
 }
 
 interface SeatRow {
@@ -36,84 +42,55 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [seats, setSeats] = useState<Seat[]>([]);
-    const [screen, setScreen] = useState<Screen | null>(null);
     const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
+    const [seatRows, setSeatRows] = useState<SeatRow[]>([]);
+    const [maxColumns, setMaxColumns] = useState(0);
+    const [minColumn, setMinColumn] = useState(1);
 
-    // Fetch seat data from the database
+    // Fetch seat data from the API
     useEffect(() => {
-        const fetchSeatData = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                // Fetch screen details for the showtime
-                const screenResponse = await axios.get(
-                    `http://localhost:8081/api/showtimes/${showtimeId}/screen`
-                );
-
-                if (!screenResponse.data.success) {
-                    throw new Error("Could not load screen details");
-                }
-
-                setScreen(screenResponse.data.data);
-
-                // Fetch all seats for this screen with their types
+                // Fetch seats for this showtime
                 const seatsResponse = await axios.get(
-                    `http://localhost:8081/api/screens/${screenResponse.data.data.screenId}/seats`
+                    `http://localhost:8081/api/seats/showtime/${showtimeId}`
                 );
 
                 if (!seatsResponse.data.success) {
                     throw new Error("Could not load seats");
                 }
 
-                // Fetch booked seats for this showtime
-                const bookedSeatsResponse = await axios.get(
-                    `http://localhost:8081/api/showtimes/${showtimeId}/booked-seats`
-                );
+                const seatsData = seatsResponse.data.data;
+                setSeats(seatsData);
 
-                if (!bookedSeatsResponse.data.success) {
-                    throw new Error("Could not load booked seats");
+                // Find the minimum and maximum column numbers
+                const minCol = Math.min(...seatsData.map((seat: Seat) => seat.column));
+                const maxCol = Math.max(...seatsData.map((seat: Seat) => seat.column));
+                setMinColumn(minCol);
+                setMaxColumns(maxCol);
+
+                // Group seats by row
+                const rows = organizeSeatsIntoRows(seatsData);
+                setSeatRows(rows);
+
+                // Get screenId from the first seat to fetch seat types
+                if (seatsData.length > 0) {
+                    const screenId = seatsData[0].screenId;
+
+                    // Fetch seat types for this screen
+                    const seatTypesResponse = await axios.get(
+                        `http://localhost:8081/api/seattypes?screenId=${screenId}`
+                    );
+
+                    if (!seatTypesResponse.data.success) {
+                        throw new Error("Could not load seat types");
+                    }
+
+                    setSeatTypes(seatTypesResponse.data.data);
                 }
-
-                const bookedSeatIds = bookedSeatsResponse.data.data || [];
-
-                // Fetch seat types
-                const seatTypesResponse = await axios.get(
-                    `http://localhost:8081/api/seat-types`
-                );
-
-                if (!seatTypesResponse.data.success) {
-                    throw new Error("Could not load seat types");
-                }
-
-                setSeatTypes(seatTypesResponse.data.data);
-
-                // Fetch seat prices with adjustments for current date
-                const pricesResponse = await axios.get(
-                    `http://localhost:8081/api/showtimes/${showtimeId}/seat-prices`
-                );
-
-                if (!pricesResponse.data.success) {
-                    throw new Error("Could not load seat prices");
-                }
-
-                const seatPrices = pricesResponse.data.data || {};
-
-                // Process seats with status and price information
-                const processedSeats = seatsResponse.data.data.map((seat: any) => {
-                    const seatId = seat.seatId.toString();
-
-                    return {
-                        seatId,
-                        column: seat.column,
-                        row: getRowLetter(seat.column), // Convert numerical row to letter
-                        typeName: seat.typeName,
-                        price: seatPrices[seat.seatTypeId] || 0,
-                        status: bookedSeatIds.includes(seatId) ? "occupied" : "available"
-                    };
-                });
-
-                setSeats(processedSeats);
             } catch (err) {
                 console.error("Error fetching seat data:", err);
                 setError("Failed to load seat data");
@@ -123,164 +100,165 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
         };
 
         if (showtimeId) {
-            fetchSeatData();
+            fetchData();
         }
     }, [showtimeId]);
 
-    // Function to convert numeric row to letter (1 -> A, 2 -> B, etc.)
-    const getRowLetter = (rowNumber: number): string => {
-        // Calculate the row letter based on the column value
-        // This assumes your seats are stored with a numeric column that represents position
-        // You may need to adjust this based on your actual database structure
-        const rowIndex = Math.floor((rowNumber - 1) / 12); // Assuming 12 seats per row
-        return String.fromCharCode(65 + rowIndex); // 65 is ASCII for 'A'
-    };
+    // Organize seats into rows
+    const organizeSeatsIntoRows = (seats: Seat[]): SeatRow[] => {
+        const rowMap: { [key: string]: Seat[] } = {};
 
-    // Group seats by row for display
-    const groupSeatsByRow = (): SeatRow[] => {
-        const rowMap = new Map<string, Seat[]>();
-
+        // Group seats by row
         seats.forEach(seat => {
-            if (!rowMap.has(seat.row)) {
-                rowMap.set(seat.row, []);
+            if (!rowMap[seat.row]) {
+                rowMap[seat.row] = [];
             }
-            rowMap.get(seat.row)?.push(seat);
+            rowMap[seat.row].push(seat);
         });
 
-        // Sort seats within each row by column
-        rowMap.forEach((rowSeats, row) => {
-            rowMap.set(row, rowSeats.sort((a, b) => a.column - b.column));
-        });
+        // Sort rows alphabetically
+        const sortedRows = Object.keys(rowMap).sort();
 
-        // Convert map to array and sort by row
-        return Array.from(rowMap.entries())
-            .map(([row, seats]) => ({ row, seats }))
-            .sort((a, b) => a.row.localeCompare(b.row));
+        // Create row objects with sorted seats
+        return sortedRows.map(row => ({
+            row,
+            seats: rowMap[row].sort((a, b) => a.column - b.column)
+        }));
     };
 
-    const seatRows = groupSeatsByRow();
+    // Check if a seat is selected
+    const isSeatSelected = (seatId: number): boolean => {
+        return selectedSeats.some(seat => seat.SeatId === seatId);
+    };
+
+    // Handle seat click - Pass seat type ID to the parent component
+    const handleSeatClick = (seat: Seat) => {
+        if (seat.available) {
+            onSeatToggle(seat.seatId, seat.row + seat.column.toString(), seat.seatTypeId);
+        }
+    };
+
+    // Format price in VND
+    const formatPrice = (price: number): string => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(price).replace("₫", "đ");
+    };
+
+    // Get seat type information
+    const getSeatTypeName = (seatTypeId: number): string => {
+        const seatType = seatTypes.find(type => type.seatTypeId === seatTypeId);
+        return seatType ? seatType.typeName : "Unknown";
+    };
+
+    // Get seat type color
+    const getSeatTypeColor = (seatTypeId: number): string => {
+        switch (seatTypeId) {
+            case 1: // Regular seat
+                return "bg-purple-700 hover:bg-purple-800";
+            case 2: // VIP seat
+                return "bg-red-600 hover:bg-red-700";
+            case 3: // Double seat
+                return "bg-pink-600 hover:bg-pink-700";
+            default:
+                return "bg-gray-500";
+        }
+    };
+
+    // Get seat class based on its state
+    const getSeatClass = (seat: Seat): string => {
+        if (!seat.available) {
+            return "bg-gray-400 cursor-not-allowed";
+        }
+
+        if (isSeatSelected(seat.seatId)) {
+            return "bg-blue-900 hover:bg-blue-950 border border-gray-300";
+        }
+
+        return getSeatTypeColor(seat.seatTypeId);
+    };
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-red-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-            </div>
-        );
+        return <div className="text-center py-6">Loading seat map...</div>;
     }
 
     if (error) {
-        return (
-            <div className="text-center py-8">
-                <p className="text-red-500">{error}</p>
-                <p className="mt-2">Vui lòng thử lại sau</p>
-            </div>
-        );
+        return <div className="text-center text-red-500 py-6">{error}</div>;
     }
 
+    // Create a data structure to store stored seat positions
+    const calculateSeatPositions = () => {
+        // Calculate the maximum column to determine total width
+        const maxCol = Math.max(...seats.map(seat => seat.seatTypeId === 3 ? seat.column + 1 : seat.column));
+
+        // Each seat position is based on its column number
+        // Set unit width for proper spacing
+        const seatUnitWidth = 46; // Width of one seat unit in pixels (increased for spacing)
+
+        return {
+            maxCol,
+            seatUnitWidth
+        };
+    };
+
+    const { maxCol, seatUnitWidth } = calculateSeatPositions();
+
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-gray-900 p-4">
             {/* Screen */}
             <div className="relative mb-10 mx-auto">
                 <div className="w-4/5 h-8 bg-gray-800 mx-auto rounded-t-full"></div>
                 <div className="text-center text-gray-400 text-sm mt-2">Màn hình</div>
-                {screen && (
-                    <div className="text-center text-sm mt-1">
-                        {screen.name} - Phòng {screen.screenNumber}
-                    </div>
-                )}
             </div>
 
-            {/* Seat type legend */}
-            <div className="flex justify-center gap-6 mb-6">
-                {seatTypes.map(type => (
-                    <div key={type.seatTypeId} className="flex items-center">
-                        <div className={`w-4 h-4 rounded mr-2 ${getSeatTypeColor(type.typeName)}`}></div>
-                        <span className="text-sm">{type.typeName}</span>
-                    </div>
-                ))}
-                <div className="flex items-center">
-                    <div className="w-4 h-4 rounded mr-2 bg-gray-500"></div>
-                    <span className="text-sm">Đã đặt</span>
-                </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 rounded mr-2 bg-red-600"></div>
-                    <span className="text-sm">Đang chọn</span>
-                </div>
-            </div>
+            {/* Seat container */}
+            <div className="flex flex-col items-center mb-6">
+                {/* Render each row */}
+                {seatRows.map(row => (
+                    <div key={row.row} className="flex items-center mb-1 relative w-full justify-center">
+                        <div className="w-6 font-bold text-center mr-4 text-white">{row.row}</div>
 
-            {/* Seat rows */}
-            <div className="grid gap-2 mb-6 max-w-3xl mx-auto">
-                {seatRows.map((row) => (
-                    <div key={row.row} className="flex items-center">
-                        <div className="w-6 flex-shrink-0 font-medium">{row.row}</div>
-                        <div className="flex justify-center flex-grow gap-1">
-                            {row.seats.map((seat) => {
-                                const isSelected = selectedSeats.includes(seat.seatId);
-                                const isOccupied = seat.status === "occupied";
+                        {/* Container for all seats in this row with absolute positioning */}
+                        <div className="relative flex h-10" style={{ width: `${maxCol * seatUnitWidth}px` }}>
+                            {row.seats.map(seat => {
+                                const isDoubleSeat = seat.seatTypeId === 3;
+                                const seatWidth = isDoubleSeat ? "w-20" : "w-8";
+
+                                // Updated label format for double seats: "J3 - J4" instead of "J3-4"
+                                const displayLabel = isDoubleSeat
+                                    ? `${seat.row}${seat.column} - ${seat.row}${seat.column + 1}`
+                                    : `${seat.row}${seat.column}`;
+
+                                // Calculate left position based on column number (0-indexed)
+                                // Each seat unit is seatUnitWidth pixels wide
+                                const leftPosition = (seat.column - 1) * seatUnitWidth;
 
                                 return (
-                                    <button
-                                        key={seat.seatId}
-                                        disabled={isOccupied}
-                                        className={`w-6 h-6 flex items-center justify-center text-xs rounded-t-md transition-colors ${isOccupied
-                                                ? "bg-gray-500 cursor-not-allowed"
-                                                : isSelected
-                                                    ? "bg-red-600 text-white"
-                                                    : `${getSeatTypeColor(seat.typeName)} hover:opacity-80`
-                                            }`}
-                                        onClick={() => !isOccupied && onSeatToggle(seat.seatId)}
-                                        title={`${seat.typeName}: ${formatPrice(seat.price)}`}
+                                    <div
+                                        key={`seat-${seat.row}${seat.column}`}
+                                        className={`absolute ${seatWidth} h-8 rounded ${getSeatClass(seat)} text-white text-center flex items-center justify-center cursor-pointer`}
+                                        style={{ left: `${leftPosition}px` }}
+                                        onClick={() => handleSeatClick(seat)}
+                                        title={`${displayLabel} - ${getSeatTypeName(seat.seatTypeId)}`}
                                     >
-                                        {seat.column % 12 || 12}
-                                    </button>
+                                        {displayLabel}
+                                    </div>
                                 );
                             })}
                         </div>
-                        <div className="w-6 flex-shrink-0 font-medium">{row.row}</div>
                     </div>
                 ))}
             </div>
 
             {/* Price information */}
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-6 text-center text-sm flex justify-center gap-4">
                 {seatTypes.map(type => (
-                    <div key={type.seatTypeId} className="inline-block mx-2">
-                        <span className="font-semibold">{type.typeName}:</span> Từ {formatPrice(getMinPriceForType(type.typeName))}
+                    <div key={type.seatTypeId} className="text-white">
+                        <span className="font-semibold">{type.typeName}:</span> {formatPrice(type.totalPrice)}
                     </div>
                 ))}
             </div>
         </div>
     );
-
-    // Helper function to get CSS color class based on seat type
-    function getSeatTypeColor(typeName: string): string {
-        switch (typeName.toLowerCase()) {
-            case "vip":
-                return "bg-yellow-500 text-black";
-            case "couple":
-                return "bg-pink-500 text-white";
-            case "premium":
-                return "bg-purple-500 text-white";
-            case "standard":
-            default:
-                return "bg-blue-500 text-white";
-        }
-    }
-
-    // Helper function to format price in VND
-    function formatPrice(price: number): string {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(price);
-    }
-
-    // Helper function to get minimum price for a seat type
-    function getMinPriceForType(typeName: string): number {
-        const typePrices = seats
-            .filter(seat => seat.typeName === typeName)
-            .map(seat => seat.price);
-
-        return typePrices.length > 0 ? Math.min(...typePrices) : 0;
-    }
 }

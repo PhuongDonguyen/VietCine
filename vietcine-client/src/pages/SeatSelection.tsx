@@ -34,8 +34,21 @@ interface Showtime {
     date: string;
     theater: string;
     screen: string;
+}
+
+interface SeatType {
+    seatTypeId: number;
+    typeName: string;
     price: number;
-    formattedPrice: string;
+    priceIncrease: number;
+    totalPrice: number;
+}
+
+interface SelectedSeat {
+    SeatId: number;
+    SeatNumber: string;
+    seatTypeId: number;
+    price: number;
 }
 
 export default function SeatSelection() {
@@ -48,9 +61,10 @@ export default function SeatSelection() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showtime, setShowtime] = useState<Showtime | null>(null);
-    const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+    const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
+    const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
 
-    // Fetch showtime details and movie info
+    // Fetch showtime details, movie info, and seat types
     useEffect(() => {
         const fetchShowtimeDetails = async () => {
             if (!movieId || !showtimeId) {
@@ -82,6 +96,16 @@ export default function SeatSelection() {
                 }
                 const movieTitle = movieResponse.data.data.title;
 
+                // Fetch seat types for this screen
+                const screenId = showtimeData.screen.id;
+                const seatTypesResponse = await axios.get(
+                    `http://localhost:8081/api/seattypes?screenId=${screenId}`
+                );
+                if (!seatTypesResponse.data.success) {
+                    throw new Error("Could not load seat types");
+                }
+                setSeatTypes(seatTypesResponse.data.data);
+
                 // Format showtime data
                 const startTime = new Date(showtimeData.startTime);
                 const formattedShowtime: Showtime = {
@@ -96,8 +120,6 @@ export default function SeatSelection() {
                     date: startTime.toISOString().split("T")[0], // YYYY-MM-DD
                     theater: showtimeData.screen.theater.name,
                     screen: showtimeData.screen.screenNumber,
-                    price: 130000, // Default price; update if backend provides it
-                    formattedPrice: "130,000đ",
                 };
 
                 setShowtime(formattedShowtime);
@@ -112,14 +134,27 @@ export default function SeatSelection() {
         fetchShowtimeDetails();
     }, [movieId, showtimeId]);
 
-    const handleSeatToggle = (seatId: string) => {
-        setSelectedSeats((prevSeats) => {
-            if (prevSeats.includes(seatId)) {
-                return prevSeats.filter((seat) => seat !== seatId);
-            } else {
-                return [...prevSeats, seatId];
-            }
-        });
+    // Get seat price based on seat type ID
+    const getSeatPrice = (seatTypeId: number): number => {
+        const seatType = seatTypes.find(type => type.seatTypeId === seatTypeId);
+        return seatType ? seatType.totalPrice : 0;
+    };
+
+    const handleSeatToggle = (seatId: number, seatNumber: string, seatTypeId: number) => {
+        const seatIndex = selectedSeats.findIndex(seat => seat.SeatId === seatId);
+        if (seatIndex > -1) {
+            // Seat is already selected, remove it
+            setSelectedSeats(prevSeats => prevSeats.filter(seat => seat.SeatId !== seatId));
+        } else {
+            // Seat is not selected, add it with its price
+            const price = getSeatPrice(seatTypeId);
+            setSelectedSeats(prevSeats => [...prevSeats, {
+                SeatId: seatId,
+                SeatNumber: seatNumber,
+                seatTypeId,
+                price
+            }]);
+        }
     };
 
     const handleBackToShowtimes = () => {
@@ -132,14 +167,30 @@ export default function SeatSelection() {
             return;
         }
 
+        // Format the seat numbers for display
+        const seatNumbersList = selectedSeats.map(seat => seat.SeatNumber).join(", ");
+
         // In a real app, send booking request to backend
         // For now, simulate success
         alert(
-            `Đặt vé thành công! Bạn đã chọn ${selectedSeats.length} ghế: ${selectedSeats.join(
-                ", "
-            )}`
+            `Đặt vé thành công! Bạn đã chọn ${selectedSeats.length} ghế: ${seatNumbersList}`
         );
         navigate(`/`);
+    };
+
+    // Calculate total amount from selected seats
+    const calculateTotalAmount = (): number => {
+        return selectedSeats.reduce((total, seat) => total + seat.price, 0);
+    };
+
+    // Format price in VND
+    const formatPrice = (price: number): string => {
+        return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+        })
+            .format(price)
+            .replace("₫", "đ");
     };
 
     if (loading) {
@@ -174,13 +225,8 @@ export default function SeatSelection() {
         );
     }
 
-    const totalAmount = selectedSeats.length * showtime.price;
-    const formattedTotalAmount = new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-    })
-        .format(totalAmount)
-        .replace("₫", "đ");
+    const totalAmount = calculateTotalAmount();
+    const formattedTotalAmount = formatPrice(totalAmount);
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
@@ -237,20 +283,24 @@ export default function SeatSelection() {
                                 <h3 className="text-lg font-medium mb-4">Chú thích</h3>
                                 <div className="flex flex-wrap gap-6">
                                     <div className="flex items-center">
-                                        <div className="w-6 h-6 bg-gray-700 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế trống</span>
+                                        <div className="w-6 h-6 bg-purple-700 rounded-t-md mr-2"></div>
+                                        <span className="text-sm">Ghế thường</span>
                                     </div>
                                     <div className="flex items-center">
                                         <div className="w-6 h-6 bg-red-600 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế đã chọn</span>
+                                        <span className="text-sm">Ghế VIP</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-pink-600 rounded-t-md mr-2"></div>
+                                        <span className="text-sm">Ghế đôi</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-blue-900 rounded-t-md mr-2"></div>
+                                        <span className="text-sm">Ghế bạn chọn</span>
                                     </div>
                                     <div className="flex items-center">
                                         <div className="w-6 h-6 bg-gray-500 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế đã bán</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <div className="w-6 h-6 bg-yellow-500 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế VIP</span>
+                                        <span className="text-sm">Đã đặt</span>
                                     </div>
                                 </div>
                             </div>
@@ -264,6 +314,7 @@ export default function SeatSelection() {
                             selectedSeats={selectedSeats}
                             totalAmount={formattedTotalAmount}
                             onProceedToPayment={handleProceedToPayment}
+                            seatTypes={seatTypes}
                         />
                     </div>
                 </div>

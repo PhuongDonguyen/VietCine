@@ -8,18 +8,55 @@ interface Showtime {
     date: string;
     theater: string;
     screen: string;
+}
+
+interface SeatType {
+    seatTypeId: number;
+    typeName: string;
     price: number;
-    formattedPrice: string;
+    priceIncrease: number;
+    totalPrice: number;
+}
+
+interface SelectedSeat {
+    SeatId: number;
+    SeatNumber: string;
+    seatTypeId: number;
+    price: number;
 }
 
 interface Props {
     showtime: Showtime;
-    selectedSeats: string[];
+    selectedSeats: SelectedSeat[];
     totalAmount: string;
     onProceedToPayment: () => void;
+    seatTypes: SeatType[];
 }
 
-export function BookingSummary({ showtime, selectedSeats, totalAmount, onProceedToPayment }: Props) {
+export function BookingSummary({ showtime, selectedSeats, totalAmount, onProceedToPayment, seatTypes }: Props) {
+    // Group seats by their type
+    const seatsByType: { [typeId: number]: { count: number, price: number, typeName: string } } = {};
+
+    selectedSeats.forEach(seat => {
+        if (!seatsByType[seat.seatTypeId]) {
+            const seatType = seatTypes.find(type => type.seatTypeId === seat.seatTypeId);
+            seatsByType[seat.seatTypeId] = {
+                count: 0,
+                price: seat.price,
+                typeName: seatType ? seatType.typeName : "Unknown"
+            };
+        }
+        seatsByType[seat.seatTypeId].count++;
+    });
+
+    // Format price in VND
+    const formatPrice = (price: number): string => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(price).replace("₫", "đ");
+    };
+
     return (
         <div className="bg-gray-900 rounded-lg p-6 sticky top-4">
             <h2 className="text-xl font-semibold mb-6 flex items-center">
@@ -51,8 +88,8 @@ export function BookingSummary({ showtime, selectedSeats, totalAmount, onProceed
                     {selectedSeats.length > 0 ? (
                         <div className="flex flex-wrap gap-1 mt-1">
                             {selectedSeats.map(seat => (
-                                <span key={seat} className="bg-gray-800 px-2 py-1 rounded text-sm">
-                                    {seat}
+                                <span key={seat.SeatId} className="bg-gray-800 px-2 py-1 rounded text-sm">
+                                    {seat.SeatNumber}
                                 </span>
                             ))}
                         </div>
@@ -63,10 +100,13 @@ export function BookingSummary({ showtime, selectedSeats, totalAmount, onProceed
             </div>
 
             <div className="space-y-4 mb-6">
-                <div className="flex justify-between">
-                    <h3 className="text-gray-400">Giá vé ({selectedSeats.length} ghế)</h3>
-                    <p className="font-medium">{showtime.formattedPrice} × {selectedSeats.length}</p>
-                </div>
+                {/* Display each seat type separately */}
+                {Object.values(seatsByType).map((typeInfo, index) => (
+                    <div key={index} className="flex justify-between">
+                        <h3 className="text-gray-400">{typeInfo.typeName} ({typeInfo.count} ghế)</h3>
+                        <p className="font-medium">{formatPrice(typeInfo.price)} × {typeInfo.count}</p>
+                    </div>
+                ))}
 
                 <div className="flex justify-between">
                     <h3 className="text-gray-400">Phí dịch vụ</h3>
