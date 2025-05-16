@@ -5,24 +5,18 @@ import com.vietcine.moviebooking_server.dto.response.MovieResponse;
 import com.vietcine.moviebooking_server.entity.Movie;
 import com.vietcine.moviebooking_server.mapper.MovieMapper;
 import com.vietcine.moviebooking_server.repository.IMovieRepository;
+import com.vietcine.moviebooking_server.specification.MovieSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Join;
 
 @Service
 public class MovieService implements IMovieService {
@@ -47,83 +41,35 @@ public class MovieService implements IMovieService {
     }
 
     @Override
-    public Map<String, Object> getAllMovies(Pageable pageable, String search, String genreId, LocalDate showDate) {
-        try {
-            // Use manual criteria query for better control over distinct results
-            CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-            CriteriaQuery<Movie> query = cb.createQuery(Movie.class);
-            Root<Movie> movieRoot = query.from(Movie.class);
+    public Map<String, Object> getAllMovies(Pageable pageable, String search, Integer genreId, LocalDate showDate) {
+        Specification<Movie> spec = Specification
+                .where(MovieSpecification.titleContains(search))
+                .and(MovieSpecification.hasGenre(genreId))
+                .and(MovieSpecification.hasShowDate(showDate));
 
-            List<Predicate> predicates = new ArrayList<>();
+        // Fetch paginated result
+        Page<Movie> moviePage = movieRepository.findAll(spec, pageable);
 
-            // Add title search filter if provided
-            if (search != null && !search.isEmpty()) {
-                predicates.add(
-                        cb.like(cb.lower(movieRoot.get("title")), "%" + search.toLowerCase() + "%")
-                );
-            }
+        // Convert to DTOs
+        List<MovieResponse> movieResponses = moviePage.getContent().stream()
+                .map(movieMapper::toMovieDTO)
+                .collect(Collectors.toList());
 
-            // Add genre filter if provided
-            if (genreId != null && !genreId.isEmpty() && !genreId.equals("all")) {
-                Join<Object, Object> genreJoin = movieRoot.join("genres");
-                predicates.add(cb.equal(genreJoin.get("id"), genreId));
-            }
+        // Wrap in result map
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", movieResponses);
 
-            // Add date filter if provided
-            if (showDate != null) {
-                // Convert LocalDate to Instant range for that day (start of day to end of day)
-                Instant startOfDay = showDate.atStartOfDay().toInstant(ZoneOffset.UTC);
-                Instant endOfDay = showDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        Map<String, Object> pagination = new HashMap<>();
+        pagination.put("currentPage", moviePage.getNumber());
+        pagination.put("totalPages", moviePage.getTotalPages());
+        pagination.put("totalElements", moviePage.getTotalElements());
+        pagination.put("pageSize", moviePage.getSize());
 
-                Join<Object, Object> showtimeJoin = movieRoot.join("showtimes");
-                predicates.add(
-                        cb.and(
-                                cb.greaterThanOrEqualTo(showtimeJoin.get("startTime"), startOfDay),
-                                cb.lessThan(showtimeJoin.get("startTime"), endOfDay)
-                        )
-                );
-            }
+        result.put("pagination", pagination);
 
-            // Apply all predicates
-            if (!predicates.isEmpty()) {
-                query.where(predicates.toArray(new Predicate[0]));
-            }
-
-            // Ensure distinct results
-            query.select(movieRoot).distinct(true);
-
-            // Execute query
-            List<Movie> movies = entityManager.createQuery(query).getResultList();
-
-            // Manual pagination
-            int start = (int) pageable.getOffset();
-            int end = Math.min((start + pageable.getPageSize()), movies.size());
-
-            // If start index is out of bounds, return empty list
-            List<Movie> pageContent = start >= movies.size() ? Collections.emptyList()
-                    : movies.subList(start, end);
-
-            // Convert to DTOs
-            List<MovieResponse> movieResponses = pageContent.stream()
-                    .map(movieMapper::toMovieDTO)
-                    .collect(Collectors.toList());
-
-            // Create page object
-            Page<Movie> moviePage = new PageImpl<>(pageContent, pageable, movies.size());
-
-            // Create response with data and pagination info
-            Map<String, Object> result = new HashMap<>();
-            result.put("content", movieResponses);
-            result.put("totalElements", moviePage.getTotalElements());
-            result.put("totalPages", moviePage.getTotalPages());
-
-            return result;
-        } catch (Exception e) {
-            // Log exception
-            e.printStackTrace();
-            throw e;
-        }
+        return result;
     }
+
 
     @Override
     public List<MovieResponse> getAvailableMovies() {

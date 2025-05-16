@@ -1,6 +1,6 @@
 package com.vietcine.moviebooking_server.exception;
 
-import com.vietcine.moviebooking_server.dto.response.APIResponse;
+import com.vietcine.moviebooking_server.dto.response.ApiResponse;
 import io.jsonwebtoken.MalformedJwtException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -26,24 +26,24 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<APIResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        return ResponseEntity.badRequest().body(new APIResponse(ex.getMessage(), false));
+    public ResponseEntity<ApiResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(new ApiResponse(ex.getMessage(), false));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<APIResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        APIResponse response = new APIResponse(ex.getMessage(), false);
+    public ResponseEntity<ApiResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        ApiResponse response = new ApiResponse(ex.getMessage(), false);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT); // 409
     }
 
     @ExceptionHandler(MalformedJwtException.class)
-    public ResponseEntity<APIResponse> handleMalformedJwtException(MalformedJwtException ex) {
+    public ResponseEntity<ApiResponse> handleMalformedJwtException(MalformedJwtException ex) {
         System.out.println("In here in global exception handler");
-        return new ResponseEntity<>(new APIResponse("Token không hợp lệ: " + ex.getMessage(), false), HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(new ApiResponse("Token không hợp lệ: " + ex.getMessage(), false), HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<APIResponse> handleGeneralException(Exception ex) {
-        return new ResponseEntity<>(new APIResponse("Đã có lỗi xảy ra: " + ex.getMessage(), false), HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ApiResponse> handleGeneralException(Exception ex) {
+        return new ResponseEntity<>(new ApiResponse("Đã có lỗi xảy ra: " + ex.getMessage(), false), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

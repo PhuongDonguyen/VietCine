@@ -5,10 +5,9 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class SeatPriceResponse {
-    private Integer seatTypeId;
-    private String seatTypeName;
+public class FoodResponse {
+    private Integer id;
+    private String foodName;
+    private String description;
     private Integer price;
-    private Integer priceIncrease;
-    private Integer totalPrice;
 }

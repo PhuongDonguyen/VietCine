@@ -12,7 +12,7 @@ import java.util.Map;
 
 public interface IMovieService {
     // Original method, but now accepts pagination and filtering parameters
-    Map<String, Object> getAllMovies(Pageable pageable, String search, String genreId, LocalDate showDate);
+    Map<String, Object> getAllMovies(Pageable pageable, String search, Integer genreId, LocalDate showDate);
 
     // Non-paginated version (if needed)
     List<MovieResponse> getAllMovies();

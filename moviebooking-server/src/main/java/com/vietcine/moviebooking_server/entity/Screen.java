@@ -34,5 +34,4 @@ public class Screen {
     @NotNull
     @Column(name = "TotalSeats", nullable = false)
     private Integer totalSeats;
-
 }

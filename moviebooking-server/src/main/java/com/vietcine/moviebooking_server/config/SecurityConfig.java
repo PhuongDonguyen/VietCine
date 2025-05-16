@@ -37,14 +37,20 @@ public class SecurityConfig {
 //                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) // Add custom filter
                 .addFilterAfter(authFilter, UsernamePasswordAuthenticationFilter.class) // Add JWT authentication filter
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/movies/**").permitAll() // Allow access to movie endpoints
-                        .requestMatchers("/api/genres/**").permitAll() // Allow access to genre endpoints
-                        .requestMatchers("/api/showtimes/**").permitAll() // Allow access to showtime endpoints
-                        .requestMatchers("/api/users/**").permitAll() // Allow access to user endpoints
+                        .requestMatchers("/api/movies/**").permitAll()
+                        .requestMatchers("/api/genres/**").permitAll()
+                        .requestMatchers("/api/showtimes/**").permitAll()
+                        .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/seats/**").permitAll()
-                        .requestMatchers("api/seattypes/**").permitAll()
+                        .requestMatchers("/api/seattypes/**").permitAll()
+                        .requestMatchers("/api/seatprices/**").permitAll()
+                        .requestMatchers("/api/food/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No session

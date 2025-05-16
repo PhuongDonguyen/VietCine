@@ -15,15 +15,10 @@ import java.util.stream.Collectors;
 public class SeatTypeService implements ISeatTypeService {
     @Autowired
     private ISeatTypeRepository seatTypeRepository;
-
+    
     @Override
-    public List<SeatType> getAllSeatType() {
-        return seatTypeRepository.findAll();
-    }
-
-    @Override
-    public List<SeatTypeWithPriceResponse> getSeattypesWithPrice(int screenId) {
-        List<Object[]> rawSeats = seatTypeRepository.getSeattypesWithPrice(screenId);
+    public List<SeatTypeWithPriceResponse> getSeattypesOfScreen(int screenId) {
+        List<Object[]> rawSeats = seatTypeRepository.getSeattypesOfScreen(screenId);
 
         return rawSeats.stream().map(row -> new SeatTypeWithPriceResponse(
                 (int) row[0],              // SeatTypeId

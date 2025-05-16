@@ -45,6 +45,10 @@ public class Theater {
     @Column(name = "TotalScreens", nullable = false)
     private Integer totalScreens;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TheaterBrandId")
+    private TheaterBrand theaterBrand;
+
     @OneToMany(mappedBy = "theater")
     private Set<Screen> screens = new LinkedHashSet<>();
 

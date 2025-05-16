@@ -1,13 +1,10 @@
 package com.vietcine.moviebooking_server.controller;
 
-import com.cloudinary.Cloudinary;
-import com.vietcine.moviebooking_server.dto.response.APIResponse;
+import com.vietcine.moviebooking_server.dto.response.ApiResponse;
 import com.vietcine.moviebooking_server.dto.response.UserResponse;
 import com.vietcine.moviebooking_server.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,30 +25,21 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID", description = "Retrieves user details by their ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved user"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    public ResponseEntity<APIResponse> getUserById(
+    public ResponseEntity<ApiResponse> getUserById(
             @Parameter(description = "ID of the user") @PathVariable Integer id) {
         try {
             UserResponse user = userService.getUserById(id);
-            return ResponseEntity.ok(new APIResponse("Success", true, user));
+            return ResponseEntity.ok(new ApiResponse("Success", true, user));
         } catch (Exception e) {
             return ResponseEntity.status(404).body(
-                    new APIResponse("User not found: " + e.getMessage(), false, null)
+                    new ApiResponse("User not found: " + e.getMessage(), false, null)
             );
         }
     }
 
     @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     @Operation(summary = "Update user", description = "Updates user details including avatar")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Successfully updated user"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    public ResponseEntity<APIResponse> updateUser(
+    public ResponseEntity<ApiResponse> updateUser(
             @Parameter(description = "ID of the user") @PathVariable Integer id,
             @Parameter(description = "Full name of the user") @RequestParam("fullName") String fullName,
             @Parameter(description = "Email of the user") @RequestParam("email") String email,
@@ -60,10 +48,10 @@ public class UserController {
             @Parameter(description = "Avatar image file (optional)") @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
         try {
             UserResponse updatedUser = userService.updateUser(id, fullName, email, phone, address, avatar);
-            return ResponseEntity.ok(new APIResponse("Success", true, updatedUser));
+            return ResponseEntity.ok(new ApiResponse("Success", true, updatedUser));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(
-                    new APIResponse("Failed to update user: " + e.getMessage(), false, null)
+                    new ApiResponse("Failed to update user: " + e.getMessage(), false, null)
             );
         }
     }
