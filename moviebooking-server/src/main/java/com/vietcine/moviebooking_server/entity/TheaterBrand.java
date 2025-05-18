@@ -27,6 +27,11 @@ public class TheaterBrand {
     @Column(name = "TheaterBrandName", nullable = false, length = 100)
     private String name;
 
+    @Size(max = 200)
+    @Nationalized
+    @Column(name = "Logo", nullable = true, length = 200)
+    private String logo;
+
     @ToString.Exclude
     @OneToMany(mappedBy = "theaterBrand", cascade = CascadeType.ALL)
     private Set<Theater> theaters = new LinkedHashSet<>();

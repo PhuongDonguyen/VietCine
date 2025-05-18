@@ -23,6 +23,8 @@ public interface ITheaterRepository extends JpaRepository<Theater, Integer> {
     """)
     List<Theater> findRecommendedTheatersByCity(@Param("city") String city);
 
+    List<Theater> findAllTheatersByCity(String city);
+
     List<Theater> findByTheaterBrandIdAndCity(Integer brandId, String city);
 
 
