@@ -1,0 +1,12 @@
+package com.vietcine.moviebooking_server.mapper;
+
+import com.vietcine.moviebooking_server.dto.response.TheaterResponse;
+import com.vietcine.moviebooking_server.entity.Theater;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface TheaterMapper {
+    @Mapping(source = "theaterBrand.id", target = "theaterBrandId")
+    TheaterResponse toTheaterDTO(Theater theater);
+}

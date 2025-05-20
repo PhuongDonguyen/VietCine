@@ -19,12 +19,13 @@ public class SeatService implements ISeatService {
 
         return rawSeats.stream().map(row -> new SeatResponse(
                 (int) row[0],              // SeatId
-                (String) row[1],              // Row
+                (Character) row[1],              // Row
                 (int) row[2],               // Column
                 row[3] != null ? (int) row[3] : null, // BookingId (nullable)
                 (int) row[4],              // ShowtimeId
                 (int) row[5],               // SeatTypeId
-                (boolean) row[6]           // IsAvailable
+                (int) row[6],               // ScreenId
+                (boolean) row[7]           // IsAvailable
         )).collect(Collectors.toList());
     }
 

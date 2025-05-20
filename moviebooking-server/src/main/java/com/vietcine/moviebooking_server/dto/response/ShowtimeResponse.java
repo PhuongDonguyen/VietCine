@@ -16,4 +16,5 @@ public class ShowtimeResponse {
     private Instant startTime;
     private Instant endTime;
     private ScreenResponse screen;
+    private String availableSeats;
 }

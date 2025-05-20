@@ -8,6 +8,8 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -44,6 +46,12 @@ public class Theater {
     @ColumnDefault("1")
     @Column(name = "TotalScreens", nullable = false)
     private Integer totalScreens;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "TheaterBrandId", nullable = false)
+    private TheaterBrand theaterBrand;
 
     @OneToMany(mappedBy = "theater")
     private Set<Screen> screens = new LinkedHashSet<>();

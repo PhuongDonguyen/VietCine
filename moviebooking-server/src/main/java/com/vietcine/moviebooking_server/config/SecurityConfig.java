@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll() // Allow access to user endpoints
                         .requestMatchers("/api/seats/**").permitAll()
                         .requestMatchers("api/seattypes/**").permitAll()
+                        .requestMatchers("/api/theater-brands/**").permitAll()
+                        .requestMatchers("/api/theaters/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No session

@@ -645,7 +645,6 @@ export default function MovieShowtimes() {
                     </div>
                 </section>
             </div>
-
             {/* Footer */}
             <Footer />
         </div>
