@@ -14,4 +14,5 @@ public class TheaterResponse {
     private String name;
     private String address;
     private String city;
+    private TheaterBrandResponse theaterBrand;
 }

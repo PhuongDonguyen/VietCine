@@ -1,10 +1,8 @@
 package com.vietcine.moviebooking_server.dto.response;
 
-import com.vietcine.moviebooking_server.entity.Booking;
 import lombok.*;
 
 import java.time.Instant;
-import java.util.Set;
 
 @Getter
 @Setter

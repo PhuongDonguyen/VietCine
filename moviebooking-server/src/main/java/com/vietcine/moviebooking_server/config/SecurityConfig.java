@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/seattypes/**").permitAll()
                         .requestMatchers("/api/seatprices/**").permitAll()
                         .requestMatchers("/api/food/**").permitAll()
+                        .requestMatchers("/api/bookings/**").permitAll()
+                        .requestMatchers("/api/vnpay-payment/**").permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

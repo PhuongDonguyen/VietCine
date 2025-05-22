@@ -163,6 +163,28 @@
 		</dependency>
 	</dependencies>
 
+	<!-- Spring mail sending -->
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-mail</artifactId>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-thymeleaf</artifactId>
+	</dependency>
+
+	<!-- QR code generator -->
+	<dependency>
+		<groupId>com.google.zxing</groupId>
+		<artifactId>core</artifactId>
+		<version>3.5.1</version>
+	</dependency>
+	<dependency>
+		<groupId>com.google.zxing</groupId>
+		<artifactId>javase</artifactId>
+		<version>3.5.1</version>
+	</dependency>
+
 	<build>
 		<plugins>
 			<plugin>

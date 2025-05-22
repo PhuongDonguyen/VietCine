@@ -1,24 +1,25 @@
 package com.vietcine.moviebooking_server.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @Getter
 @Setter
 @ToString
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class BookingSeat {
-    @EmbeddedId
-    private BookingSeatId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "BookingSeatId", nullable = false)
+    private Integer id;
 
-    @MapsId("bookingId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "BookingId", nullable = false)
     private Booking booking;
 
-    @MapsId("seatId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "SeatId", nullable = false)
     private Seat seat;
