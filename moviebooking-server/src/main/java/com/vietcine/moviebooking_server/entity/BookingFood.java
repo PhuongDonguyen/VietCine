@@ -13,6 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 public class BookingFood {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "BookingFoodId", nullable = false)
     private Integer id;
 

@@ -8,6 +8,7 @@ import com.vietcine.moviebooking_server.dto.response.BookingResponse;
 import com.vietcine.moviebooking_server.entity.*;
 import com.vietcine.moviebooking_server.mapper.BookingMapper;
 import com.vietcine.moviebooking_server.repository.*;
+import com.vietcine.moviebooking_server.service.mailer.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,9 @@ public class BookingService implements IBookingService {
 
     @Autowired
     private IShowtimeSeatRepository showtimeSeatRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private BookingMapper bookingMapper;
@@ -159,6 +163,18 @@ public class BookingService implements IBookingService {
 
         // Save updated booking
         Booking updatedBooking = bookingRepository.save(booking);
+
+        // Send email if booking status is successful
+        if ("Success".equalsIgnoreCase(updateRequest.getStatus())) {
+            try {
+                emailService.sendTicketConfirmationEmail(updatedBooking.getId());
+                System.out.println("Ticket confirmation email sent successfully for booking ID: " + updatedBooking.getId());
+            } catch (Exception e) {
+                // Log the error but don't fail the booking update
+                System.err.println("Failed to send confirmation email for booking ID: " + updatedBooking.getId() + ". Error: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
 
         // Map to BookingResponse using MapStruct
         return bookingMapper.toBookingResponse(updatedBooking);
