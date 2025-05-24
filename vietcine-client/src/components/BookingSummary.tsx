@@ -8,6 +8,7 @@ interface Showtime {
     date: string;
     theater: string;
     screen: string;
+    screenId?: number; // Added optional screenId for seat price API
 }
 
 interface SeatType {
@@ -108,11 +109,6 @@ export function BookingSummary({ showtime, selectedSeats, totalAmount, onProceed
                     </div>
                 ))}
 
-                <div className="flex justify-between">
-                    <h3 className="text-gray-400">Phí dịch vụ</h3>
-                    <p className="font-medium">Miễn phí</p>
-                </div>
-
                 <div className="flex justify-between text-lg font-semibold">
                     <h3>Tổng cộng</h3>
                     <p className="text-red-600">{totalAmount}</p>
@@ -125,7 +121,7 @@ export function BookingSummary({ showtime, selectedSeats, totalAmount, onProceed
                 onClick={selectedSeats.length > 0 ? onProceedToPayment : undefined}
             >
                 <CreditCard className="h-5 w-5" />
-                Thanh toán
+                Mua vé
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-4">

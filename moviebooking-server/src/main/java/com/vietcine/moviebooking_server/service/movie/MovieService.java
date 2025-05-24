@@ -33,19 +33,12 @@ public class MovieService implements IMovieService {
     }
 
     @Override
-    public List<MovieResponse> getAllMovies() {
-        List<Movie> movies = movieRepository.findAll();
-        return movies.stream()
-                .map(movieMapper::toMovieDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Map<String, Object> getAllMovies(Pageable pageable, String search, Integer genreId, LocalDate showDate) {
+    public Map<String, Object> getAvailableMovies(Pageable pageable, String search, Integer genreId, LocalDate showDate) {
         Specification<Movie> spec = Specification
                 .where(MovieSpecification.titleContains(search))
                 .and(MovieSpecification.hasGenre(genreId))
-                .and(MovieSpecification.hasShowDate(showDate));
+                .and(MovieSpecification.hasShowDate(showDate))
+                .and(MovieSpecification.isAvailable(true));
 
         // Fetch paginated result
         Page<Movie> moviePage = movieRepository.findAll(spec, pageable);
@@ -66,32 +59,6 @@ public class MovieService implements IMovieService {
         pagination.put("pageSize", moviePage.getSize());
 
         result.put("pagination", pagination);
-
-        return result;
-    }
-
-
-    @Override
-    public List<MovieResponse> getAvailableMovies() {
-        List<Movie> movies = movieRepository.findByIsAvailable(true);
-        return movies.stream()
-                .map(movieMapper::toMovieDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Map<String, Object> getAvailableMovies(Pageable pageable) {
-        Page<Movie> moviePage = movieRepository.findByIsAvailable(true, pageable);
-
-        List<MovieResponse> movieResponses = moviePage.getContent().stream()
-                .map(movieMapper::toMovieDTO)
-                .collect(Collectors.toList());
-
-        // Create response with data and pagination info
-        Map<String, Object> result = new HashMap<>();
-        result.put("content", movieResponses);
-        result.put("totalElements", moviePage.getTotalElements());
-        result.put("totalPages", moviePage.getTotalPages());
 
         return result;
     }
@@ -126,7 +93,6 @@ public class MovieService implements IMovieService {
         return recommendedByGenre;
     }
 
-
     @Override
     public MovieDetailResponse getMovieDetailBySlug(String slug) {
         Movie movie = movieRepository.findBySlugWithAllRelationships(slug)
@@ -136,6 +102,7 @@ public class MovieService implements IMovieService {
         return movieResponse;
     }
 
+    @Override
     public MovieResponse getMovieDetailById(Integer id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Movie not found with id: " + id));

@@ -4,14 +4,14 @@ import axios from "axios";
 interface SelectedSeat {
     SeatId: number;
     SeatNumber: string;
-    seatTypeId?: number;  // Added seatTypeId property
-    price?: number;       // Added price property
+    seatTypeId?: number;
+    price?: number;
 }
 
 interface Props {
     showtimeId: string;
     selectedSeats: SelectedSeat[];
-    onSeatToggle: (seatId: number, seatNumber: string, seatTypeId: number) => void;  // Updated to include seatTypeId
+    onSeatToggle: (seatId: number, seatNumber: string, seatTypeId: number) => void;
 }
 
 interface Seat {
@@ -89,7 +89,9 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
                         throw new Error("Could not load seat types");
                     }
 
-                    setSeatTypes(seatTypesResponse.data.data);
+                    const seatTypesData = seatTypesResponse.data.data;
+                    console.log("Fetched seat types:", seatTypesData); // Debug log
+                    setSeatTypes(seatTypesData);
                 }
             } catch (err) {
                 console.error("Error fetching seat data:", err);
@@ -149,7 +151,11 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
     // Get seat type information
     const getSeatTypeName = (seatTypeId: number): string => {
         const seatType = seatTypes.find(type => type.seatTypeId === seatTypeId);
-        return seatType ? seatType.typeName : "Unknown";
+        if (!seatType) {
+            console.warn(`No seat type found for seatTypeId: ${seatTypeId}`);
+            return "Unknown Seat Type";
+        }
+        return seatType.typeName;
     };
 
     // Get seat type color
@@ -169,7 +175,7 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
     // Get seat class based on its state
     const getSeatClass = (seat: Seat): string => {
         if (!seat.available) {
-            return "bg-gray-400 cursor-not-allowed";
+            return "bg-gray-400 cursor-not-allowed pointer-events-none";
         }
 
         if (isSeatSelected(seat.seatId)) {
@@ -187,14 +193,10 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
         return <div className="text-center text-red-500 py-6">{error}</div>;
     }
 
-    // Create a data structure to store stored seat positions
+    // Calculate seat positions
     const calculateSeatPositions = () => {
-        // Calculate the maximum column to determine total width
         const maxCol = Math.max(...seats.map(seat => seat.seatTypeId === 3 ? seat.column + 1 : seat.column));
-
-        // Each seat position is based on its column number
-        // Set unit width for proper spacing
-        const seatUnitWidth = 46; // Width of one seat unit in pixels (increased for spacing)
+        const seatUnitWidth = 46; // Width of one seat unit in pixels
 
         return {
             maxCol,
@@ -231,15 +233,15 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
                                     : `${seat.row}${seat.column}`;
 
                                 // Calculate left position based on column number (0-indexed)
-                                // Each seat unit is seatUnitWidth pixels wide
                                 const leftPosition = (seat.column - 1) * seatUnitWidth;
 
                                 return (
                                     <div
                                         key={`seat-${seat.row}${seat.column}`}
-                                        className={`absolute ${seatWidth} h-8 rounded ${getSeatClass(seat)} text-white text-center flex items-center justify-center cursor-pointer`}
+                                        className={`absolute ${seatWidth} h-8 rounded ${getSeatClass(seat)} text-white text-center flex items-center justify-center ${seat.available ? "cursor-pointer" : "cursor-not-allowed pointer-events-none"
+                                            }`}
                                         style={{ left: `${leftPosition}px` }}
-                                        onClick={() => handleSeatClick(seat)}
+                                        onClick={seat.available ? () => handleSeatClick(seat) : undefined}
                                         title={`${displayLabel} - ${getSeatTypeName(seat.seatTypeId)}`}
                                     >
                                         {displayLabel}

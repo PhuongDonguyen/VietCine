@@ -28,6 +28,7 @@ export default function AllAvailableMovie() {
     const navigate = useNavigate();
     const [movies, setMovies] = useState<Movie[]>([]);
     const [recommendedMovies, setRecommendedMovies] = useState<{ [key: string]: Movie[] }>({});
+    const [loadingRecommendedMovie, setLoadingRecommendedMovie] = useState<boolean>(false);
     const [categories, setCategories] = useState<Genre[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
@@ -36,7 +37,7 @@ export default function AllAvailableMovie() {
     const [loadingMore, setLoadingMore] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [pagination, setPagination] = useState<PaginationData>({
-        page: 1,
+        page: 0, // Start from 0
         totalPages: 1,
         hasMore: false
     });
@@ -47,7 +48,7 @@ export default function AllAvailableMovie() {
             try {
                 setLoading(true);
                 setError(null);
-                await fetchMovies(1); // Start with page 1
+                await fetchMovies(0); // Start with page 0
 
                 // Fetch categories/genres
                 const categoriesResponse = await axios.get("http://localhost:8081/api/genres");
@@ -70,7 +71,7 @@ export default function AllAvailableMovie() {
             try {
                 setLoading(true);
                 setError(null);
-                await fetchMovies(1); // Reset to page 1 when filters change
+                await fetchMovies(0); // Reset to page 0 when filters change
                 setLoading(false);
             } catch (err) {
                 setError("Failed to fetch filtered movies");
@@ -92,14 +93,14 @@ export default function AllAvailableMovie() {
         // Build query parameters
         const params = new URLSearchParams();
         params.append('page', page.toString());
-        params.append('limit', '4'); // Number of movies per page
+        params.append('size', '4'); // Number of movies per page
 
         if (searchQuery) {
             params.append('search', searchQuery);
         }
 
         if (selectedCategory !== "all") {
-            params.append('genre', selectedCategory);
+            params.append('genreId', selectedCategory);
         }
 
         if (selectedDate) {
@@ -108,14 +109,10 @@ export default function AllAvailableMovie() {
 
         try {
             const response = await axios.get(`http://localhost:8081/api/movies?${params.toString()}`);
+            const moviesList = response.data.data || [];
+            const paginationData = response.data.paginationMeta;
 
-            // Updated to match the new response structure
-            const { data } = response.data;
-            console.log(data);
-            const moviesList = data.data || [];
-            const paginationData = data.pagination;
-
-            if (page === 1) {
+            if (page === 0) {
                 // Replace the movies array if it's the first page
                 setMovies(moviesList);
             } else {
@@ -124,13 +121,13 @@ export default function AllAvailableMovie() {
             }
 
             setPagination({
-                page,
+                page: paginationData.currentPage || page,
                 totalPages: paginationData.totalPages || 1,
-                hasMore: page < (paginationData.totalPages || 1)
+                hasMore: (paginationData.currentPage ?? page) < (paginationData.totalPages - 1 || 0)
             });
 
             // If this is the first page, also fetch recommended movies
-            if (page === 1) {
+            if (page === 0) {
                 fetchRecommendedMovies();
             }
 
@@ -144,12 +141,17 @@ export default function AllAvailableMovie() {
     // Function to fetch recommended movies by category
     const fetchRecommendedMovies = async () => {
         try {
+            setLoadingRecommendedMovie(true);
             const response = await axios.get("http://localhost:8081/api/movies/recommended");
-            const recommendedData = response.data.data.data || {};
+            // Access the nested data structure
+            const recommendedData = response.data?.data || {};
             setRecommendedMovies(recommendedData);
+            setLoadingRecommendedMovie(false);
         } catch (err) {
             console.error("Error fetching recommended movies:", err);
             // Don't set error state here, as it's not critical
+            setRecommendedMovies({});
+            setLoadingRecommendedMovie(false);
         }
     };
 
@@ -255,7 +257,7 @@ export default function AllAvailableMovie() {
                                             className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-red-600"
                                             value={selectedDate}
                                             onChange={e => setSelectedDate(e.target.value)}
-                                            min={new Date().toISOString().split("T")[0]} 
+                                            min={new Date().toISOString().split("T")[0]}
                                         />
                                     </div>
 
@@ -333,44 +335,53 @@ export default function AllAvailableMovie() {
                             <span className="border-b-2 border-red-600 pb-1">Các phim bạn có thể thích</span>
                         </h2>
 
-                        {Object.keys(recommendedMovies).length === 0 ? (
+                        {loadingRecommendedMovie ? (
                             <div className="flex justify-center items-center h-64">
                                 <div className="text-gray-400">Đang tải gợi ý phim...</div>
                             </div>
                         ) : (
                             <>
-                                {Object.entries(recommendedMovies).map(([category, categoryMovies], index) => (
-                                    <div key={index} className="mb-16">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h3 className="text-2xl font-semibold text-white">{category}</h3>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedCategory(categories.find(c => c.name === category)?.id || "all");
-                                                    window.scrollTo({ top: 0, behavior: "smooth" });
-                                                }}
-                                                className="text-red-600 hover:text-red-500 transition duration-300"
-                                            >
-                                                Xem tất cả →
-                                            </button>
-                                        </div>
+                                {Object.entries(recommendedMovies).map(([category, categoryMovies]) => {
+                                    // Ensure categoryMovies is an array
+                                    const moviesArray = Array.isArray(categoryMovies) ? categoryMovies : [];
 
-                                        {/* First row of movies */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-                                            {categoryMovies.slice(0, 4).map(movie => (
-                                                <MovieCard key={movie.id} movie={movie} />
-                                            ))}
-                                        </div>
-
-                                        {/* Second row of movies if there are more than 4 */}
-                                        {categoryMovies.length > 4 && (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                                                {categoryMovies.slice(4, 8).map(movie => (
-                                                    <MovieCard key={movie.id} movie={movie} />
-                                                ))}
+                                    return (
+                                        <div key={category} className="mb-16">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h3 className="text-2xl font-semibold text-white">{category}</h3>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedCategory(categories.find(c => c.name === category)?.id || "all");
+                                                        window.scrollTo({ top: 0, behavior: "smooth" });
+                                                    }}
+                                                    className="text-red-600 hover:text-red-500 transition duration-300"
+                                                >
+                                                    Xem tất cả →
+                                                </button>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+
+                                            {/* Only render if there are movies */}
+                                            {moviesArray.length > 0 && (
+                                                <>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                                                        {moviesArray.slice(0, 4).map(movie => (
+                                                            <MovieCard key={movie.id} movie={movie} />
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Second row if more than 4 movies */}
+                                                    {moviesArray.length > 4 && (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                                                            {moviesArray.slice(4, 8).map(movie => (
+                                                                <MovieCard key={movie.id} movie={movie} />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </>
                         )}
                     </div>

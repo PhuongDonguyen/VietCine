@@ -45,4 +45,11 @@ public class MovieSpecification {
             );
         };
     }
+
+    public static Specification<Movie> isAvailable(Boolean isAvailable) {
+        return (root, query, cb) -> {
+            if (isAvailable == null) return null;
+            return cb.equal(root.get("isAvailable"), isAvailable);
+        };
+    }
 }

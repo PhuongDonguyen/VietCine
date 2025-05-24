@@ -23,7 +23,7 @@ import java.util.Map;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
-@RestController // Changed from @Controller to @RestController
+@RestController
 @RequestMapping("/api/movies")
 @Tag(name = "Movies", description = "APIs for managing movies")
 public class MovieController {
@@ -31,16 +31,16 @@ public class MovieController {
     private IMovieService movieService;
 
     @GetMapping
-    @Operation(summary = "Get all movies", description = "Retrieves a paginated list of movies with optional filters")
-    public ResponseEntity<ApiResponse> getAllMovies(
-            @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.ASC) Pageable pageable,
+    @Operation(summary = "Get available movies", description = "Retrieves a paginated list of available movies with optional filters")
+    public ResponseEntity<ApiResponse> getAvailableMovies(
+            @PageableDefault(size = 4, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer genreId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         try {
             System.out.println("Search: " + search);
-            Map<String, Object> data = movieService.getAllMovies(pageable, search, genreId, date);
+            Map<String, Object> data = movieService.getAvailableMovies(pageable, search, genreId, date);
             Map<String, Object> pagination = (Map<String, Object>) data.get("pagination");
             PaginationMeta paginationMeta = PaginationMeta.builder()
                     .totalPages((Integer) pagination.get("totalPages"))
@@ -55,34 +55,6 @@ public class MovieController {
                     .paginationMeta(paginationMeta)
                     .build();
             return ResponseEntity.ok(apiResponse);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                    new ApiResponse("Error retrieving movies: " + e.getMessage(), false, INTERNAL_SERVER_ERROR)
-            );
-        }
-    }
-
-    @GetMapping("/available")
-    @Operation(summary = "Get available movies", description = "Retrieves a paginated list of currently available movies")
-    public ResponseEntity<ApiResponse> getAvailableMovies(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "8") int limit
-    ) {
-        try {
-            Pageable pageable = PageRequest.of(page - 1, limit);
-            Map<String, Object> serviceResult = movieService.getAvailableMovies(pageable);
-            Map<String, Object> result = new HashMap<>();
-            result.put("data", serviceResult.get("content"));
-
-            Map<String, Object> pagination = new HashMap<>();
-            pagination.put("page", page);
-            pagination.put("size", limit);
-            pagination.put("totalElements", serviceResult.get("totalElements"));
-            pagination.put("totalPages", serviceResult.get("totalPages"));
-
-            result.put("pagination", pagination);
-
-            return ResponseEntity.ok(new ApiResponse("Success", true, result));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(
                     new ApiResponse("Error retrieving movies: " + e.getMessage(), false, INTERNAL_SERVER_ERROR)
