@@ -91,7 +91,7 @@ export default function PaymentReturn() {
         try {
             await axios.patch(`http://localhost:8081/api/bookings/${bookingId}`, {
                 vnpTxnRef: vnpTxnRef,
-                status: status === 'Success' ? 'Success' : 'Cancelled'
+                status
             }, {
                 headers: {
                     'Content-Type': 'application/json'

@@ -1,0 +1,15 @@
+{
+  "name": "selenium-tests",
+  "version": "1.0.0",
+  "description": "Selenium tests for user profile update",
+  "scripts": {
+    "test": "mocha tests/*.test.js"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.11.1",
+    "mocha": "^10.2.0",
+    "chai": "^4.3.10"
+  },
+  "author": "",
+  "license": "ISC"
+}

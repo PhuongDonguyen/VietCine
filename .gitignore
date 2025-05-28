@@ -1,4 +1,4 @@
-/vietcine-client/node_modules
+node_modules
 moviebooking-server/src/main/resources/viet-cine-firebase-adminsdk.json
 .history
 /vietcine-client/.history
