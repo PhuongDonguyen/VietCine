@@ -8,6 +8,8 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -45,6 +47,7 @@ public class Theater {
     @Column(name = "TotalScreens", nullable = false)
     private Integer totalScreens;
 
+    @NotNull  
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TheaterBrandId")
     private TheaterBrand theaterBrand;

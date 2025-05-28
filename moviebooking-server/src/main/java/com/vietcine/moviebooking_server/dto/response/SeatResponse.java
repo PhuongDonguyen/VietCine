@@ -14,5 +14,4 @@ public class SeatResponse {
     private Integer seatTypeId;
     private Integer screenId;
     private boolean isAvailable;
-
 }

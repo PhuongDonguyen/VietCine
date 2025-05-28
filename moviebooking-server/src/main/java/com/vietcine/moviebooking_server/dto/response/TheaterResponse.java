@@ -15,4 +15,5 @@ public class TheaterResponse {
     private String address;
     private String city;
     private TheaterBrandResponse theaterBrand;
+    private Integer totalScreens;
 }

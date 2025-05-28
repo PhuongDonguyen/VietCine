@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/seats/**").permitAll()
                         .requestMatchers("/api/seattypes/**").permitAll()
                         .requestMatchers("/api/seatprices/**").permitAll()
+                        .requestMatchers("/api/theater-brands/**").permitAll()
+                        .requestMatchers("/api/theaters/**").permitAll()
                         .requestMatchers("/api/food/**").permitAll()
                         .requestMatchers("/api/bookings/**").permitAll()
                         .requestMatchers("/api/vnpay-payment/**").permitAll()

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class ShowtimeService {
+public class ShowtimeService implements IShowtimeService{
 
     private final IShowtimeRepository showtimeRepository;
     private final ShowtimeMapper showtimeMapper;
@@ -22,6 +22,7 @@ public class ShowtimeService {
         this.showtimeMapper = showtimeMapper;
     }
 
+    @Override
     public List<ShowtimeResponse> getShowtimesByMovieId(Integer movieId) {
         List<Showtime> showtimes = showtimeRepository.findByMovieId(movieId);
         return showtimes.stream()
