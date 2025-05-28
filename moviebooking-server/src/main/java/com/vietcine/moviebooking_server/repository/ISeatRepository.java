@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface SeatRepository extends JpaRepository<Seat, Integer> {
+public interface ISeatRepository extends JpaRepository<Seat, Integer> {
 
     @Query(value = "EXEC GetSeats @ShowtimeId = :showtimeId", nativeQuery = true)
     List<Object[]> getSeatsByShowtimeRaw(@Param("showtimeId") int showtimeId);

@@ -10,7 +10,6 @@ import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
-@ToString
 @Entity
 public class SeatPrice {
     @Id

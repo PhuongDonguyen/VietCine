@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
-import com.vietcine.moviebooking_server.dto.response.APIResponse;
+import com.vietcine.moviebooking_server.dto.response.ApiResponse;
 import com.vietcine.moviebooking_server.entity.User;
 import com.vietcine.moviebooking_server.repository.IUserRepository;
 import com.vietcine.moviebooking_server.utils.JwtUtil;
@@ -120,7 +120,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private void sendErrorResponse(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(new APIResponse(message, false)));
+        response.getWriter().write(objectMapper.writeValueAsString(new ApiResponse(message, false)));
     }
 
 //    @Override

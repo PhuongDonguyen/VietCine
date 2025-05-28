@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { NavBar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { SeatMap } from "../components/SeatMap";
 import { BookingSummary } from "../components/BookingSummary";
+import { FoodSelectionModal } from "../components/FoodSelectionModal";
 import { ArrowLeft, Clock, MapPin } from "lucide-react";
 import axios from "axios";
+import { AuthContext } from "../context/authContext";
 
 interface Screen {
     id: number;
@@ -16,7 +18,13 @@ interface Screen {
         name: string;
         address: string;
         city: string;
+        theaterBrand: TheaterBrand;
     };
+}
+
+interface TheaterBrand {
+    id: number;
+    theaterBrandName: string;
 }
 
 interface ShowtimeResponse {
@@ -34,11 +42,59 @@ interface Showtime {
     date: string;
     theater: string;
     screen: string;
+    screenId: number;
+    theaterBrandId: number;
+}
+
+interface SeatType {
+    seatTypeId: number;
+    typeName: string;
     price: number;
-    formattedPrice: string;
+    priceIncrease: number;
+    totalPrice: number;
+}
+
+interface SeatPrice {
+    seatTypeId: number;
+    seatTypeName: string;
+    price: number;
+    priceIncrease: number;
+    totalPrice: number;
+}
+
+interface SelectedSeat {
+    SeatId: number;
+    SeatNumber: string;
+    seatTypeId: number;
+    price: number;
+}
+
+interface FoodItem {
+    id: number;
+    foodName: string;
+    description: string;
+    price: number;
+    quantity: number;
+}
+
+interface BookingResponse {
+    bookingId: number;
+    userId: number;
+    showtimeId: number;
+    bookingDate: string;
+    total: number;
+    status: string;
+    discount: number | null;
+    paymentId: number;
+    isActive: boolean;
+    vnpTxnRef: string;
+    voucherUserId: number | null;
+    seatIds: number[];
+    foodItems: { foodId: number; quantity: number; total: number }[];
 }
 
 export default function SeatSelection() {
+    const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
@@ -48,9 +104,11 @@ export default function SeatSelection() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showtime, setShowtime] = useState<Showtime | null>(null);
-    const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+    const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
+    const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
+    const [seatPrices, setSeatPrices] = useState<SeatPrice[]>([]);
+    const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
 
-    // Fetch showtime details and movie info
     useEffect(() => {
         const fetchShowtimeDetails = async () => {
             if (!movieId || !showtimeId) {
@@ -63,7 +121,6 @@ export default function SeatSelection() {
                 setLoading(true);
                 setError(null);
 
-                // Fetch showtime details
                 const showtimeResponse = await axios.get(
                     `http://localhost:8081/api/showtimes?showtimeId=${showtimeId}`
                 );
@@ -72,8 +129,9 @@ export default function SeatSelection() {
                 }
 
                 const showtimeData: ShowtimeResponse = showtimeResponse.data.data;
+                const screenId = showtimeData.screen.id;
+                const theaterBrandId = showtimeData.screen.theater.theaterBrand.id;
 
-                // Fetch movie title
                 const movieResponse = await axios.get(
                     `http://localhost:8081/api/movies/detail/${movieId}`
                 );
@@ -82,7 +140,22 @@ export default function SeatSelection() {
                 }
                 const movieTitle = movieResponse.data.data.title;
 
-                // Format showtime data
+                const seatTypesResponse = await axios.get(
+                    `http://localhost:8081/api/seattypes?screenId=${screenId}`
+                );
+                if (!seatTypesResponse.data.success) {
+                    throw new Error("Could not load seat types");
+                }
+                setSeatTypes(seatTypesResponse.data.data);
+
+                const seatPricesResponse = await axios.get(
+                    `http://localhost:8081/api/seatprices?screenId=${screenId}`
+                );
+                if (!seatPricesResponse.data.success) {
+                    throw new Error("Could not load seat prices");
+                }
+                setSeatPrices(seatPricesResponse.data.data);
+
                 const startTime = new Date(showtimeData.startTime);
                 const formattedShowtime: Showtime = {
                     id: showtimeData.id,
@@ -93,11 +166,11 @@ export default function SeatSelection() {
                         minute: "2-digit",
                         timeZone: "Asia/Ho_Chi_Minh",
                     }),
-                    date: startTime.toISOString().split("T")[0], // YYYY-MM-DD
+                    date: startTime.toISOString().split("T")[0],
                     theater: showtimeData.screen.theater.name,
                     screen: showtimeData.screen.screenNumber,
-                    price: 130000, // Default price; update if backend provides it
-                    formattedPrice: "130,000đ",
+                    screenId: screenId,
+                    theaterBrandId: theaterBrandId,
                 };
 
                 setShowtime(formattedShowtime);
@@ -112,34 +185,135 @@ export default function SeatSelection() {
         fetchShowtimeDetails();
     }, [movieId, showtimeId]);
 
-    const handleSeatToggle = (seatId: string) => {
-        setSelectedSeats((prevSeats) => {
-            if (prevSeats.includes(seatId)) {
-                return prevSeats.filter((seat) => seat !== seatId);
-            } else {
-                return [...prevSeats, seatId];
-            }
-        });
+    const getSeatPrice = (seatTypeId: number): number => {
+        const seatPrice = seatPrices.find(price => price.seatTypeId === seatTypeId);
+        if (seatPrice) {
+            return seatPrice.totalPrice;
+        }
+
+        const seatType = seatTypes.find(type => type.seatTypeId === seatTypeId);
+        return seatType ? seatType.totalPrice : 0;
+    };
+
+    const handleSeatToggle = (seatId: number, seatNumber: string, seatTypeId: number) => {
+        const seatIndex = selectedSeats.findIndex(seat => seat.SeatId === seatId);
+        if (seatIndex > -1) {
+            setSelectedSeats(prevSeats => prevSeats.filter(seat => seat.SeatId !== seatId));
+        } else {
+            const price = getSeatPrice(seatTypeId);
+            setSelectedSeats(prevSeats => [...prevSeats, {
+                SeatId: seatId,
+                SeatNumber: seatNumber,
+                seatTypeId,
+                price
+            }]);
+        }
     };
 
     const handleBackToShowtimes = () => {
         navigate(`/movie-detail/${movieId}`);
     };
 
-    const handleProceedToPayment = () => {
+    const handleOpenFoodModal = () => {
         if (selectedSeats.length === 0) {
             alert("Vui lòng chọn ít nhất một ghế để tiếp tục!");
             return;
         }
+        setIsFoodModalOpen(true);
+    };
 
-        // In a real app, send booking request to backend
-        // For now, simulate success
-        alert(
-            `Đặt vé thành công! Bạn đã chọn ${selectedSeats.length} ghế: ${selectedSeats.join(
-                ", "
-            )}`
-        );
-        navigate(`/`);
+    const handleFoodModalClose = () => {
+        setIsFoodModalOpen(false);
+    };
+
+    const calculateTotalAmount = (seats: SelectedSeat[], foods: FoodItem[] | null): number => {
+        const seatsTotal = seats.reduce((total, seat) => total + seat.price, 0);
+        let foodTotal = 0;
+        if (foods != null) {
+            foodTotal = foods.reduce((total, food) => total + (food.price * food.quantity), 0);
+        }
+        return seatsTotal + foodTotal;
+    };
+
+    const formatPrice = (price: number): string => {
+        return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+        })
+            .format(price)
+            .replace("₫", "đ");
+    };
+
+    const initiateVNPayPayment = async (foods: FoodItem[]) => {
+        try {
+            const totalAmount = calculateTotalAmount(selectedSeats, foods);
+            const seatNumbersList = selectedSeats.map(seat => seat.SeatNumber).join(", ");
+
+
+            // Prepare data for VNPAY payment
+            const paymentData = {
+                amount: totalAmount,
+                orderInfo: `Thanh toan ve xem phim: ${showtime?.movieTitle} - Ghe: ${seatNumbersList}`,
+                bankCode: "", // Optional, can be set if you want to specify a bank
+            };
+
+            // Call VNPAY payment creation endpoint
+            const paymentResponse = await axios.post("http://localhost:8081/api/vnpay-payment/create", paymentData, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            // Redirect to the VNPAY payment URL
+            const paymentUrl = paymentResponse.data;
+            if (paymentUrl) {
+                const bookingRequest = {
+                    user: user.id, // Replace with actual user ID from authentication context
+                    showtime: showtime?.id,
+                    total: totalAmount,
+                    status: "pending",
+                    discount: 0, // Replace with actual discount if applicable
+                    payment: 1, // Replace with actual payment method ID
+                    voucherUserId: null, // Replace with actual voucher ID if applicable
+                    seats: selectedSeats.map(seat => ({
+                        seat: seat.SeatId
+                    })),
+                    foods: foods.map(food => ({
+                        foodId: food.id,
+                        quantity: food.quantity,
+                        total: food.price * food.quantity
+                    }))
+                };
+
+                const bookingResponse = await axios.post("http://localhost:8081/api/bookings", bookingRequest, {
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (!bookingResponse.data.success) {
+                    throw new Error(bookingResponse.data.message || "Không thể tạo booking");
+                }
+
+                const bookingData: BookingResponse = bookingResponse.data.data;
+
+                // Store booking details in localStorage to use after payment
+                localStorage.setItem("pendingBooking", JSON.stringify(bookingData));
+
+                console.log("Booking created successfully:", bookingData);
+                window.location.href = paymentUrl;
+            } else {
+                throw new Error("Không nhận được URL thanh toán từ server");
+            }
+        } catch (err: any) {
+            console.error("Error initiating VNPAY payment:", err);
+            alert(err.message || "Đã có lỗi xảy ra khi khởi tạo thanh toán VNPAY. Vui lòng thử lại!");
+        }
+    };
+
+    const handleFoodSelection = async (foods: FoodItem[]) => {
+        setIsFoodModalOpen(false);
+        await initiateVNPayPayment(foods);
     };
 
     if (loading) {
@@ -174,20 +348,14 @@ export default function SeatSelection() {
         );
     }
 
-    const totalAmount = selectedSeats.length * showtime.price;
-    const formattedTotalAmount = new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-    })
-        .format(totalAmount)
-        .replace("₫", "đ");
+    const totalAmount = calculateTotalAmount(selectedSeats, null);
+    const formattedTotalAmount = formatPrice(totalAmount);
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
             <NavBar />
 
             <div className="container my-14 mx-auto px-4 py-8 flex-1">
-                {/* Header with movie info and back button */}
                 <div className="mb-8">
                     <button
                         onClick={handleBackToShowtimes}
@@ -222,54 +390,72 @@ export default function SeatSelection() {
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8">
-                    {/* Seat selection */}
                     <div className="flex-1">
                         <div className="bg-gray-900 rounded-lg p-6">
                             <h2 className="text-xl font-semibold mb-6">Chọn ghế ngồi</h2>
 
-                            <SeatMap
-                                showtimeId={showtime.id.toString()}
-                                selectedSeats={selectedSeats}
-                                onSeatToggle={handleSeatToggle}
-                            />
+                            <div className="max-w-[1000px] overflow-x-auto">
+                                <SeatMap
+                                    showtimeId={showtime.id.toString()}
+                                    selectedSeats={selectedSeats}
+                                    onSeatToggle={handleSeatToggle}
+                                />
+                            </div>
 
                             <div className="mt-8">
                                 <h3 className="text-lg font-medium mb-4">Chú thích</h3>
                                 <div className="flex flex-wrap gap-6">
                                     <div className="flex items-center">
-                                        <div className="w-6 h-6 bg-gray-700 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế trống</span>
+                                        <div className="w-6 h-6 bg-purple-700 rounded-t-md mr-2"></div>
+                                        <span className="text-sm">Ghế thường</span>
                                     </div>
                                     <div className="flex items-center">
                                         <div className="w-6 h-6 bg-red-600 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế đã chọn</span>
+                                        <span className="text-sm">Ghế VIP</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-pink-600 rounded-t-md mr-2"></div>
+                                        <span className="text-sm">Ghế đôi</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-blue-900 rounded-t-md mr-2"></div>
+                                        <span className="text-sm">Ghế bạn chọn</span>
                                     </div>
                                     <div className="flex items-center">
                                         <div className="w-6 h-6 bg-gray-500 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế đã bán</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <div className="w-6 h-6 bg-yellow-500 rounded-t-md mr-2"></div>
-                                        <span className="text-sm">Ghế VIP</span>
+                                        <span className="text-sm">Đã đặt</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Booking summary */}
                     <div className="md:w-80">
                         <BookingSummary
                             showtime={showtime}
                             selectedSeats={selectedSeats}
                             totalAmount={formattedTotalAmount}
-                            onProceedToPayment={handleProceedToPayment}
+                            onProceedToPayment={handleOpenFoodModal}
+                            seatTypes={seatPrices.length > 0 ? seatPrices.map(price => ({
+                                seatTypeId: price.seatTypeId,
+                                typeName: price.seatTypeName,
+                                price: price.price,
+                                priceIncrease: price.priceIncrease,
+                                totalPrice: price.totalPrice
+                            })) : seatTypes}
                         />
                     </div>
                 </div>
             </div>
 
             <Footer />
+
+            <FoodSelectionModal
+                isOpen={isFoodModalOpen}
+                onClose={handleFoodModalClose}
+                onConfirm={handleFoodSelection}
+                theaterBrandId={showtime?.theaterBrandId || 1}
+            />
         </div>
     );
-}
+} 

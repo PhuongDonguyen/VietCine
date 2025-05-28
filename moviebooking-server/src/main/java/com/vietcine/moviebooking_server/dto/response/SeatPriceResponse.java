@@ -1,11 +1,14 @@
 package com.vietcine.moviebooking_server.dto.response;
 
-import com.vietcine.moviebooking_server.entity.SeatType;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
+@Data
+@AllArgsConstructor
 public class SeatPriceResponse {
-    private Integer id;
-    private SeatType seatType;
+    private Integer seatTypeId;
+    private String seatTypeName;
     private Integer price;
+    private Integer priceIncrease;
+    private Integer totalPrice;
 }

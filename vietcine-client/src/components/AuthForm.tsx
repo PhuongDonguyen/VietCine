@@ -81,7 +81,7 @@ export function AuthForm({ isLogin, onToggleForm }: AuthFormProps) {
                 dispatch({
                     type: "LOGIN",
                     payload: {
-                        user: { uid: user.id, fullName: user.fullName, email: user.email, avatar: user?.avatar },
+                        user: { id: user.id, fullName: user.fullName, email: user.email, avatar: user?.avatar },
                         token: response.data.data.token,
                         role: response.data.data.role,
                     },

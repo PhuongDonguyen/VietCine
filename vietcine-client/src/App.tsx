@@ -9,6 +9,7 @@ import { AuthContextProvider } from './context/authContext';
 import Signup from './pages/Signup';
 import AllAvailableMovie from './pages/AllAvailableMovie';
 import Theaters from './pages/MovieShowtimesTheater';
+import PaymentReturn from './pages/PaymentReturn';
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
   {
     element: <Theaters />,
     path: '/book-tickets'
+  },
+  {
+    element: <PaymentReturn />,
+    path: "/payment-return"
   }
 ])
 

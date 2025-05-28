@@ -26,10 +26,12 @@ export default function Profile() {
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    // Added to force file input reset
+    const [avatarInputKey, setAvatarInputKey] = useState(0);
 
     const VALID_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"];
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    
+
     useEffect(() => {
         if (userContext?.id) {
             fetchUserData();
@@ -42,6 +44,7 @@ export default function Profile() {
             if (response.data.success) {
                 setUser(response.data.data);
                 setFormData(response.data.data);
+                setPreviewAvatar(response.data.data.avatar || null);
             } else {
                 setErrorMessage("Không thể tải thông tin người dùng");
             }
@@ -52,9 +55,11 @@ export default function Profile() {
     };
 
     useEffect(() => {
-        if (user) {
+        if (user && !isEditing) {
             setFormData(user);
             setPreviewAvatar(user.avatar || null);
+            setAvatarFile(null);
+            setAvatarInputKey((prev) => prev + 1); // Reset file input
         }
     }, [user, isEditing]);
 
@@ -145,6 +150,7 @@ export default function Profile() {
                 setSuccessMessage("Thông tin tài khoản đã được cập nhật thành công");
                 setErrorMessage("");
                 setAvatarFile(null);
+                setAvatarInputKey((prev) => prev + 1); // Reset file input
 
                 setTimeout(() => setSuccessMessage(""), 3000);
             } else {
@@ -156,6 +162,14 @@ export default function Profile() {
         } finally {
             setIsUpdating(false);
         }
+    };
+
+    const handleCancel = () => {
+        setIsEditing(false);
+        setPreviewAvatar(user?.avatar || null);
+        setAvatarFile(null);
+        setAvatarInputKey((prev) => prev + 1); // Reset file input
+        setErrorMessage("");
     };
 
     if (!user || !formData) {
@@ -212,7 +226,7 @@ export default function Profile() {
                                         {previewAvatar || user.avatar ? (
                                             <img
                                                 data-testid="avatar-image"
-                                                src={previewAvatar ? previewAvatar : user.avatar}
+                                                src={previewAvatar || user.avatar}
                                                 alt={user.fullName}
                                                 className="w-full h-full object-cover"
                                             />
@@ -224,6 +238,7 @@ export default function Profile() {
                                     </div>
                                     {isEditing && (
                                         <input
+                                            key={avatarInputKey} // Force re-render to clear input
                                             type="file"
                                             accept="image/jpeg,image/png,image/gif"
                                             onChange={handleAvatarChange}
@@ -236,9 +251,7 @@ export default function Profile() {
                                     {isEditing && (
                                         <label
                                             htmlFor="avatar-upload"
-                                            className={`absolute bottom-0 right-0 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors cursor-pointer ${isUpdating
-                                                    ? "opacity-50 cursor-not-allowed"
-                                                    : ""
+                                            className={`absolute bottom-0 right-0 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors ${isUpdating ? "opacity-50 cursor-not-allowed" : ""
                                                 }`}
                                             data-testid="avatar-upload-label"
                                         >
@@ -270,9 +283,7 @@ export default function Profile() {
                                         data-testid="info-title"
                                         className="text-xl font-semibold text-white"
                                     >
-                                        {isEditing
-                                            ? "Chỉnh sửa thông tin"
-                                            : "Thông tin cá nhân"}
+                                        {isEditing ? "Chỉnh sửa thông tin" : "Thông tin cá nhân"}
                                     </h3>
                                     {!isEditing && (
                                         <button
@@ -299,10 +310,7 @@ export default function Profile() {
                                     )}
                                 </div>
 
-                                <form
-                                    onSubmit={handleSubmit}
-                                    data-testid="profile-form"
-                                >
+                                <form onSubmit={handleSubmit} data-testid="profile-form">
                                     <div className="space-y-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
@@ -318,9 +326,7 @@ export default function Profile() {
                                                         id="fullName"
                                                         name="fullName"
                                                         value={formData.fullName}
-                                                        onChange={
-                                                            handleInputChange
-                                                        }
+                                                        onChange={handleInputChange}
                                                         className="w-full px-4 py-2 bg-gray-800 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                                                         disabled={isUpdating}
                                                         data-testid="fullname-input"
@@ -344,13 +350,11 @@ export default function Profile() {
                                                 </label>
                                                 {isEditing ? (
                                                     <input
-                                                        type="email"
+                                                        type="text"
                                                         id="email"
                                                         name="email"
                                                         value={formData.email}
-                                                        onChange={
-                                                            handleInputChange
-                                                        }
+                                                        onChange={handleInputChange}
                                                         className="w-full px-4 py-2 bg-gray-800 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                                                         disabled={isUpdating}
                                                         data-testid="email-input"
@@ -379,9 +383,7 @@ export default function Profile() {
                                                     id="phone"
                                                     name="phone"
                                                     value={formData.phone}
-                                                    onChange={
-                                                        handleInputChange
-                                                    }
+                                                    onChange={handleInputChange}
                                                     className="w-full px-4 py-2 bg-gray-800 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                                                     disabled={isUpdating}
                                                     data-testid="phone-input"
@@ -408,10 +410,8 @@ export default function Profile() {
                                                     type="text"
                                                     id="address"
                                                     name="address"
-                                                    value={formData.address}
-                                                    onChange={
-                                                        handleInputChange
-                                                    }
+                                                    value={formData.address || ""}
+                                                    onChange={handleInputChange}
                                                     className="w-full px-4 py-2 bg-gray-800 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                                                     disabled={isUpdating}
                                                     data-testid="address-input"
@@ -421,7 +421,7 @@ export default function Profile() {
                                                     className="text-white"
                                                     data-testid="address-display"
                                                 >
-                                                    {user.address}
+                                                    {user.address || "Chưa cung cấp"}
                                                 </p>
                                             )}
                                         </div>
@@ -430,9 +430,7 @@ export default function Profile() {
                                             <div className="pt-4 flex space-x-3">
                                                 <button
                                                     type="submit"
-                                                    className={`flex items-center space-x-1 px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors ${isUpdating
-                                                            ? "opacity-50 cursor-not-allowed"
-                                                            : ""
+                                                    className={`flex items-center space-x-1 px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors ${isUpdating ? "opacity-50 cursor-not-allowed" : ""
                                                         }`}
                                                     disabled={isUpdating}
                                                     data-testid="submit-button"
@@ -478,22 +476,13 @@ export default function Profile() {
                                                                     d="M5 13l4 4L19 7"
                                                                 />
                                                             </svg>
-                                                            <span>
-                                                                Lưu thay đổi
-                                                            </span>
+                                                            <span>Lưu thay đổi</span>
                                                         </>
                                                     )}
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setIsEditing(false);
-                                                        setPreviewAvatar(
-                                                            user.avatar || null
-                                                        );
-                                                        setAvatarFile(null);
-                                                        setErrorMessage("");
-                                                    }}
+                                                    onClick={handleCancel}
                                                     className="flex items-center space-x-1 px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors"
                                                     data-testid="cancel-button"
                                                 >

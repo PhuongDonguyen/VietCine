@@ -47,10 +47,9 @@ public class Theater {
     @Column(name = "TotalScreens", nullable = false)
     private Integer totalScreens;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "TheaterBrandId", nullable = false)
+    @NotNull  
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TheaterBrandId")
     private TheaterBrand theaterBrand;
 
     @OneToMany(mappedBy = "theater")

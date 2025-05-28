@@ -1,7 +1,7 @@
 package com.vietcine.moviebooking_server.service.seat;
 
 import com.vietcine.moviebooking_server.dto.response.SeatResponse;
-import com.vietcine.moviebooking_server.repository.SeatRepository;
+import com.vietcine.moviebooking_server.repository.ISeatRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public class SeatService implements ISeatService {
 
     @Autowired
-    private SeatRepository seatRepository;
+    private ISeatRepository seatRepository;
 
     public List<SeatResponse> getSeatsByShowtime(int showtimeId) {
         List<Object[]> rawSeats = seatRepository.getSeatsByShowtimeRaw(showtimeId);

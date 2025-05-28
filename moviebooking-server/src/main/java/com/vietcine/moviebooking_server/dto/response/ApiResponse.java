@@ -1,27 +1,27 @@
 package com.vietcine.moviebooking_server.dto.response;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class APIResponse {
+@Builder
+public class ApiResponse<T> {
     private String message;
     private Boolean success;
-    private Object data;
-    private int total;
-    private int page;
-    private int size;
+    private T data;
+    private PaginationMeta paginationMeta;
 
-    public APIResponse(String message, Boolean success, Object data) {
+    public ApiResponse(String message, Boolean success, T data) {
         this.message = message;
         this.success = success;
         this.data = data;
     }
 
-    public APIResponse(String message, Boolean success) {
+    public ApiResponse(String message, Boolean success) {
         this.message = message;
         this.success = success;
     }

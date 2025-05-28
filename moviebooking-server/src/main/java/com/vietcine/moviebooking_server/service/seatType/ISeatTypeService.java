@@ -10,7 +10,5 @@ import org.w3c.dom.stylesheets.LinkStyle;
 import java.util.List;
 
 public interface ISeatTypeService {
-    List<SeatType> getAllSeatType();
-
-    List<SeatTypeWithPriceResponse> getSeattypesWithPrice(int screenId);
+    List<SeatTypeWithPriceResponse> getSeattypesOfScreen(int screenId);
 }

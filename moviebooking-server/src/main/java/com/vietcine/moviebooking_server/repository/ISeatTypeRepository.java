@@ -10,5 +10,5 @@ import java.util.List;
 
 public interface ISeatTypeRepository extends JpaRepository<SeatType, Integer> {
     @Query(value = "EXEC [GetSeatPricesByScreenId] @ScreenId = :screenId", nativeQuery = true)
-    List<Object[]> getSeattypesWithPrice(@Param("screenId") int screenId);
+    List<Object[]> getSeattypesOfScreen(@Param("screenId") int screenId);
 }

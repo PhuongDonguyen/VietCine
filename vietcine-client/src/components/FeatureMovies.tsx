@@ -25,8 +25,8 @@ export function FeaturedMovies() {
     useEffect(() => {
         const fetchFeaturedMovies = async () => {
             try {
-                const response = await axios.get("http://localhost:8081/api/movies/available?page=1&limit=4");
-                setFeaturedMovies(response.data.data.data);
+                const response = await axios.get("http://localhost:8081/api/movies?page=0&limit=4");
+                setFeaturedMovies(response.data.data);
                 setLoading(false);
             } catch (err) {
                 setError("Failed to fetch featured movies");

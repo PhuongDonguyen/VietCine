@@ -1,16 +1,11 @@
 package com.vietcine.moviebooking_server.dto.response;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
 public class TheaterBrandResponse {
     private Integer id;
-    private String name;
+    private String theaterBrandName;
     private String logo;
 }
