@@ -29,6 +29,11 @@ public class TheaterBrand {
     @Column(name = "TheaterBrandName", nullable = false, length = 100)
     private String theaterBrandName;
 
+    @Size(max = 200)
+    @Nationalized
+    @Column(name = "Logo", nullable = true, length = 200)
+    private String logo;
+
     @OneToMany(mappedBy = "theaterBrand")
     private Set<Food> foods = new LinkedHashSet<>();
 

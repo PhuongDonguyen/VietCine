@@ -9,7 +9,7 @@ interface Cinema {
   name: string
   logo?: string
   slug?: string
-  brand: string
+  theaterBrand: CinemaBrand
   address?: string
   city?: string
   totalScreens?: number
@@ -54,7 +54,7 @@ interface Movie {
 
 interface CinemaBrand {
   id: number
-  name: string
+  theaterBrandName: string
   logo: string
 }
 
@@ -77,10 +77,14 @@ export default function MovieShowtimes() {
   const generateDates = () => {
     const dates = []
     const today = new Date()
+    console.log("Today:", today.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }))
+    console.log("Today ISO:", today.toISOString())
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
+      date.setHours(date.getHours() + 7)
+      console.log("Generated date:", date.toISOString().split("T")[0], "Day:", date.getDate())
 
       const day = date.getDate()
       const dayName =
@@ -133,6 +137,13 @@ export default function MovieShowtimes() {
     }
   }, [selectedCinema, selectedDate])
 
+  useEffect(() => {
+  setSelectedCinema(null) // Reset khi city thay đổi
+  if (city) {
+    fetchCinemaBrands(city)
+  }
+}, [city])
+
   const fetchCities = async () => {
     try {
       setLoading(true)
@@ -156,29 +167,29 @@ export default function MovieShowtimes() {
   }
 
   const fetchCinemaBrands = async (selectedCity: string) => {
-    try {
-      setLoading(true)
-      setError(null)
-      setBrandsLoaded(false) // Reset trạng thái load
+  try {
+    setLoading(true)
+    setError(null)
+    setBrandsLoaded(false)
 
-      const response = await axios.get(
-        `http://localhost:8081/api/theater-brands?city=${encodeURIComponent(selectedCity)}`,
-      )
-      if (response.data.success) {
-        setCinemaBrands(response.data.data) // Lưu danh sách thương hiệu rạp từ API
-        setBrandsLoaded(true) // Đánh dấu đã load xong
-      } else {
-        setError("Không thể tải danh sách hệ thống rạp")
-      }
-      setLoading(false)
-    } catch (err) {
-      setError("Lỗi khi lấy danh sách hệ thống rạp")
-      setLoading(false)
-      console.error("Error fetching cinema brands:", err)
-      // Đặt brandsLoaded = true để vẫn có thể tiếp tục dù có lỗi
-      setBrandsLoaded(true)
+    const response = await axios.get(
+      `http://localhost:8081/api/theater-brands?city=${encodeURIComponent(selectedCity)}`,
+    )
+    if (response.data.success) {
+      setCinemaBrands(response.data.data)
+      setBrandsLoaded(true) // Chỉ đặt khi thành công
+    } else {
+      setError("Không thể tải danh sách hệ thống rạp")
+      setBrandsLoaded(true) // Vẫn cho phép tiếp tục để tránh treo
     }
+    setLoading(false)
+  } catch (err) {
+    setError("Lỗi khi lấy danh sách hệ thống rạp")
+    setLoading(false)
+    setBrandsLoaded(true)
+    console.error("Error fetching cinema brands:", err)
   }
+}
 
   const fetchCinemas = async () => {
     try {
@@ -199,9 +210,9 @@ export default function MovieShowtimes() {
           return {
             id: cinema.id,
             name: cinema.name,
-            logo: brand?.logo || "/placeholder.svg", // Chỉ sử dụng logo từ API hoặc placeholder
+            logo: cinema.theaterBrand.logo || "/placeholder.svg", // Chỉ sử dụng logo từ API hoặc placeholder
             slug: cinema.name.toLowerCase().replace(/\s+/g, "-"),
-            brand: cinema.theaterBrandId.toString(),
+            theaterBrand: brand || { id: cinema.theaterBrand.id, theaterBrandName: cinema.theaterBrand.theaterBrandName, logo: cinema.theaterBrand.logo },
             address: cinema.address,
             city: cinema.city,
             totalScreens: cinema.totalScreens,
@@ -274,7 +285,7 @@ export default function MovieShowtimes() {
     let filteredCinemas = cinemas
 
     if (selectedBrand !== "all") {
-      filteredCinemas = filteredCinemas.filter((cinema) => cinema.brand === selectedBrand.toString())
+      filteredCinemas = filteredCinemas.filter((cinema) => cinema.theaterBrand.id.toString() === selectedBrand.toString())
     }
 
     if (searchQuery) {
@@ -434,11 +445,11 @@ export default function MovieShowtimes() {
                       <div className="w-12 h-12 flex items-center justify-center bg-white rounded-lg mb-1 p-1">
                         <img
                           src={brand.logo || "/placeholder.svg"}
-                          alt={brand.name}
+                          alt={brand.theaterBrandName}
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>
-                      <span className="text-xs text-center">{brand.name.split(" ")[0]}</span>
+                      <span className="text-xs text-center">{brand.theaterBrandName.split(" ")[0]}</span>
                     </button>
                   ))}
                 </div>
@@ -452,7 +463,7 @@ export default function MovieShowtimes() {
                   {selectedBrand !== "all" ? (
                     <img
                       src={getSelectedBrandLogo() || "/placeholder.svg"}
-                      alt={`${cinemaBrands.find((b) => b.id === selectedBrand)?.name} Logo`}
+                      alt={`${cinemaBrands.find((b) => b.id === selectedBrand)?.theaterBrandName} Logo`}
                       className="w-12 h-12 object-contain bg-white rounded-md p-1 mr-4"
                     />
                   ) : (
@@ -470,7 +481,7 @@ export default function MovieShowtimes() {
                   <div>
                     <h2 className="text-xl font-bold text-white">
                       {selectedBrand !== "all"
-                        ? `Rạp chiếu phim ${cinemaBrands.find((b) => b.id === selectedBrand)?.name}`
+                        ? `Rạp chiếu phim ${cinemaBrands.find((b) => b.id === selectedBrand)?.theaterBrandName}`
                         : "Lịch chiếu phim - Tất cả hệ thống rạp"}
                     </h2>
                   </div>
