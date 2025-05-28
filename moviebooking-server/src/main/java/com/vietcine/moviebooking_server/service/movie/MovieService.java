@@ -33,6 +33,14 @@ public class MovieService implements IMovieService {
     }
 
     @Override
+    public List<MovieResponse> getAllMovies() {
+        List<Movie> movies = movieRepository.findByIsAvailableTrueAndReleaseDateLessThanEqual(LocalDate.now());
+        return movies.stream()
+                .map(movieMapper::toMovieDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Map<String, Object> getAvailableMovies(Pageable pageable, String search, Integer genreId, LocalDate showDate) {
         Specification<Movie> spec = Specification
                 .where(MovieSpecification.titleContains(search))

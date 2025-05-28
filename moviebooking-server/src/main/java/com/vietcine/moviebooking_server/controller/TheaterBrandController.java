@@ -1,8 +1,6 @@
 package com.vietcine.moviebooking_server.controller;
-
-import com.vietcine.moviebooking_server.dto.response.APIResponse;
+import com.vietcine.moviebooking_server.dto.response.ApiResponse;
 import com.vietcine.moviebooking_server.dto.response.TheaterBrandResponse;
-import com.vietcine.moviebooking_server.dto.response.TheaterResponse;
 import com.vietcine.moviebooking_server.service.theaterBrand.ITheaterBrandService;
 import com.vietcine.moviebooking_server.service.theater.ITheaterService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,15 +24,15 @@ public class TheaterBrandController {
 
     @GetMapping
     @Operation(summary = "Get brands by city", description = "Returns all theater brands available in a given city")
-    public ResponseEntity<APIResponse> getBrandsByCity(
+    public ResponseEntity<ApiResponse> getBrandsByCity(
             @RequestParam String city
     ) {
         try {
             List<TheaterBrandResponse> brands = theaterBrandService.getBrandsByCity(city);
-            return ResponseEntity.ok(new APIResponse("Success", true, brands));
+            return ResponseEntity.ok(new ApiResponse("Success", true, brands));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(
-                    new APIResponse("Error retrieving brands: " + e.getMessage(), false, null)
+                    new ApiResponse("Error retrieving brands: " + e.getMessage(), false, null)
             );
         }
     }

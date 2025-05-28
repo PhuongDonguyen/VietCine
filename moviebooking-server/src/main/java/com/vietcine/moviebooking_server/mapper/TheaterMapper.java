@@ -7,6 +7,5 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface TheaterMapper {
-    @Mapping(source = "theaterBrand.id", target = "theaterBrandId")
     TheaterResponse toTheaterDTO(Theater theater);
 }

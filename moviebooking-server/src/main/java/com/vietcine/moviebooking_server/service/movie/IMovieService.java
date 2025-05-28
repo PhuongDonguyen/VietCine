@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface IMovieService {
+    List<MovieResponse> getAllMovies();
+
     Map<String, Object> getAvailableMovies(Pageable pageable, String search, Integer genreId, LocalDate showDate);
 
     Map<String, List<MovieResponse>> getRecommendedMoviesByCategory();
