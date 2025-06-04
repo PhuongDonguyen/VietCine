@@ -232,16 +232,24 @@ export default function MovieShowtimes() {
 
   // Trích xuất thời gian từ ISO string sang HH:MM
   const extractTime = (isoString: string) => {
+    if (!isoString || !isoString.includes("T")) return "N/A";
     try {
-      // Lấy phần thời gian từ chuỗi ISO
-      const timeString = isoString.split("T")[1]
-      // Lấy giờ và phút
-      return timeString.substring(0, 5)
+      // Tạo đối tượng Date từ chuỗi ISO
+      const date = new Date(isoString);
+      // Định nghĩa options đúng kiểu DateTimeFormatOptions
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false // Định dạng 24 giờ
+      };
+      // Lấy thời gian định dạng HH:MM
+      return date.toLocaleTimeString('en-US', options).substring(0, 5);
     } catch (error) {
-      console.error("Error extracting time:", error)
-      return isoString // Trả về chuỗi gốc nếu có lỗi
+      console.error("Error extracting time:", error);
+      return "N/A";
     }
-  }
+  };
 
   const fetchMovieShowtimes = async () => {
     if (!selectedCinema || !selectedDate) return

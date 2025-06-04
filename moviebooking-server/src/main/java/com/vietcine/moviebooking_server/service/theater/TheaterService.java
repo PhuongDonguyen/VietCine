@@ -90,8 +90,9 @@ public class TheaterService implements ITheaterService {
             return Collections.emptyList();
         }
 
-        Instant now = Instant.now().plusSeconds(7 * 3600);
-        LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
+        // Lấy thời gian hiện tại và chuyển sang UTC+7
+        Instant now = Instant.now().plusSeconds(7 * 3600); // Chuyển sang UTC+7
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày theo UTC+7
 
         LocalDate targetDate;
         try {
@@ -100,9 +101,11 @@ public class TheaterService implements ITheaterService {
             return Collections.emptyList();
         }
 
+        // Xác định khoảng thời gian của ngày cần tìm (theo UTC, vì DB dùng UTC)
         Instant startOfDay = targetDate.atStartOfDay().toInstant(ZoneOffset.UTC);
         Instant endOfDay = targetDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
 
+        // Nếu ngày trùng với hôm nay, dùng thời gian hiện tại (now đã là UTC+7), nếu không thì dùng đầu ngày
         Instant cutoffTime = targetDate.equals(today) ? now : startOfDay;
 
         List<MovieResponse> allMovie = movieService.getAllMovies();
@@ -112,8 +115,10 @@ public class TheaterService implements ITheaterService {
             List<ShowtimeResponse> showtimes = showtimeService.getShowtimesByMovieId(movie.getId()).stream()
                     .filter(showtime -> showtime.getScreen().getTheater().getId().equals(theaterId))
                     .filter(showtime -> {
-                        Instant showtimeStart = showtime.getStartTime();
-                        return !showtimeStart.isBefore(cutoffTime) && showtimeStart.isBefore(endOfDay);
+                        Instant showtimeStart = showtime.getStartTime(); // Thời gian từ DB (UTC)
+                        // Chuyển showtimeStart sang UTC+7 để so sánh
+                        Instant showtimeStartInUTC7 = showtimeStart.plusSeconds(7 * 3600);
+                        return !showtimeStartInUTC7.isBefore(cutoffTime) && showtimeStart.isBefore(endOfDay);
                     })
                     .collect(Collectors.toList());
 
@@ -125,10 +130,10 @@ public class TheaterService implements ITheaterService {
                 movieWithShowtimes.setRating(movie.getRating());
                 movieWithShowtimes.setDuration(movie.getDuration());
                 movieWithShowtimes.setGenres(new ArrayList<>(movie.getGenres()));
-                movieWithShowtimes.setShowtimes(showtimes);
+                movieWithShowtimes.setShowtimes(showtimes); // showtimes giữ nguyên giá trị từ DB (UTC)
                 for (ShowtimeResponse showtime : showtimes) {
                     List<SeatResponse> seats = seatService.getSeatsByShowtime(showtime.getId());
-                    long availableSeats = seats.stream().filter(SeatResponse::isAvailable).count(); // Sửa getIsAVailable thành getIsAvailable
+                    long availableSeats = seats.stream().filter(SeatResponse::isAvailable).count();
                     int totalSeats = seats.size();
                     showtime.setAvailableSeats(String.valueOf(availableSeats));
                 }
