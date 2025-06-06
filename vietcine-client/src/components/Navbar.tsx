@@ -69,7 +69,7 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
           {[
             { href: "/", label: "Trang chủ" },
             { href: "/movies", label: "Phim" },
-            { href: "/theaters", label: "Rạp chiếu" },
+            { href: "/book-tickets", label: "Rạp chiếu" },
             { href: "/promotions", label: "Khuyến mãi" },
           ].map((link) => (
             <a

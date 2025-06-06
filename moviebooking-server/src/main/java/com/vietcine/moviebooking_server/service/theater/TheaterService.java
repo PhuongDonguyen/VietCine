@@ -5,10 +5,10 @@ import com.vietcine.moviebooking_server.entity.Theater;
 import com.vietcine.moviebooking_server.mapper.TheaterMapper;
 import com.vietcine.moviebooking_server.repository.ITheaterRepository;
 import com.vietcine.moviebooking_server.service.movie.IMovieService;
-import com.vietcine.moviebooking_server.service.movie.MovieService;
+// import com.vietcine.moviebooking_server.service.movie.MovieService; // Not used directly in this method
 import com.vietcine.moviebooking_server.service.seat.ISeatService;
 import com.vietcine.moviebooking_server.service.showtime.IShowtimeService;
-import com.vietcine.moviebooking_server.service.theater.ITheaterService;
+// import com.vietcine.moviebooking_server.service.theater.ITheaterService; // Interface for this class
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +37,8 @@ public class TheaterService implements ITheaterService {
 
     @Autowired
     private ISeatService seatService;
+
+    private static final ZoneId TARGET_TIMEZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @Override
     public List<String> getAllCities() {
@@ -71,7 +73,7 @@ public class TheaterService implements ITheaterService {
         }
 
         List<Map<String, String>> daysList = new ArrayList<>();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TARGET_TIMEZONE);
         Locale vietnameseLocale = new Locale("vi", "VN");
 
         for (int i = 0; i < days; i++) {
@@ -86,40 +88,56 @@ public class TheaterService implements ITheaterService {
     }
 
     @Override
-    public List<MovieWithShowtimesResponse> getMoviesWithShowtimesByTheater(Integer theaterId, String date) {
-        if (theaterId == null || theaterId <= 0 || date == null || date.isBlank()) {
+    public List<MovieWithShowtimesResponse> getMoviesWithShowtimesByTheater(Integer theaterId, String dateString) {
+        if (theaterId == null || theaterId <= 0 || dateString == null || dateString.isBlank()) {
             return Collections.emptyList();
         }
 
-        // Lấy thời gian hiện tại và chuyển sang UTC+7
-        Instant now = Instant.now().plusSeconds(7 * 3600); // Chuyển sang UTC+7
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày theo UTC+7
-
-        LocalDate targetDate;
+        LocalDate parsedTargetDate;
         try {
-            targetDate = LocalDate.parse(date);
+            parsedTargetDate = LocalDate.parse(dateString);
         } catch (DateTimeParseException e) {
+            // Invalid date format
             return Collections.emptyList();
         }
 
-        // Xác định khoảng thời gian của ngày cần tìm (theo UTC, vì DB dùng UTC)
-        Instant startOfDay = targetDate.atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant endOfDay = targetDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        ZonedDateTime nowInTargetZone = ZonedDateTime.now(TARGET_TIMEZONE);
+        ZonedDateTime startOfTargetDayInZone = parsedTargetDate.atStartOfDay(TARGET_TIMEZONE);
+        ZonedDateTime endOfTargetDayInZone = parsedTargetDate.plusDays(1).atStartOfDay(TARGET_TIMEZONE);
 
-        // Nếu ngày trùng với hôm nay, dùng thời gian hiện tại (now đã là UTC+7), nếu không thì dùng đầu ngày
-        Instant cutoffTime = targetDate.equals(today) ? now : startOfDay;
+        ZonedDateTime effectiveFilterStartTimeInZone;
+        if (parsedTargetDate.isEqual(nowInTargetZone.toLocalDate())) {
+            // If querying for today, use the current time as the lower bound
+            effectiveFilterStartTimeInZone = nowInTargetZone;
+        } else if (parsedTargetDate.isBefore(nowInTargetZone.toLocalDate())) {
+            // If querying for a past date, no showtimes will be available from "now" onwards.
+            // To show all showtimes for a past day, set effective start to start of that day.
+            // However, typically we don't show past showtimes unless for historical data.
+            // For this logic, let's assume we want all showtimes of that past day.
+            effectiveFilterStartTimeInZone = startOfTargetDayInZone;
+        }
+        else {
+            // If querying for a future date, use the start of that day
+            effectiveFilterStartTimeInZone = startOfTargetDayInZone;
+        }
 
-        List<MovieResponse> allMovie = movieService.getAllMovies();
+
+        List<MovieResponse> allMovies = movieService.getAllMovies();
         List<MovieWithShowtimesResponse> result = new ArrayList<>();
 
-        for (MovieResponse movie : allMovie) {
+        for (MovieResponse movie : allMovies) {
             List<ShowtimeResponse> showtimes = showtimeService.getShowtimesByMovieId(movie.getId()).stream()
                     .filter(showtime -> showtime.getScreen().getTheater().getId().equals(theaterId))
                     .filter(showtime -> {
-                        Instant showtimeStart = showtime.getStartTime(); // Thời gian từ DB (UTC)
-                        // Chuyển showtimeStart sang UTC+7 để so sánh
-                        Instant showtimeStartInUTC7 = showtimeStart.plusSeconds(7 * 3600);
-                        return !showtimeStartInUTC7.isBefore(cutoffTime) && showtimeStart.isBefore(endOfDay);
+                        Instant showtimeInstantUtc = showtime.getStartTime(); // Showtime from DB is UTC
+                        if (showtimeInstantUtc == null) {
+                            return false;
+                        }
+                        ZonedDateTime showtimeInTargetZone = showtimeInstantUtc.atZone(TARGET_TIMEZONE);
+
+                        // Showtime must be at or after the effective start time and before the end of the target day
+                        return !showtimeInTargetZone.isBefore(effectiveFilterStartTimeInZone) &&
+                                showtimeInTargetZone.isBefore(endOfTargetDayInZone);
                     })
                     .collect(Collectors.toList());
 
@@ -131,17 +149,16 @@ public class TheaterService implements ITheaterService {
                 movieWithShowtimes.setRating(movie.getRating());
                 movieWithShowtimes.setDuration(movie.getDuration());
                 movieWithShowtimes.setGenres(new ArrayList<>(movie.getGenres()));
-                movieWithShowtimes.setShowtimes(showtimes); // showtimes giữ nguyên giá trị từ DB (UTC)
+                movieWithShowtimes.setShowtimes(showtimes); // Showtimes are still in original DTO form (UTC Instant)
                 for (ShowtimeResponse showtime : showtimes) {
                     List<SeatResponse> seats = seatService.getSeatsByShowtime(showtime.getId());
                     long availableSeats = seats.stream().filter(SeatResponse::isAvailable).count();
-                    int totalSeats = seats.size();
+                    // int totalSeats = seats.size(); // totalSeats not used in ShowtimeResponse
                     showtime.setAvailableSeats(String.valueOf(availableSeats));
                 }
                 result.add(movieWithShowtimes);
             }
         }
-
         return result;
     }
 
@@ -152,17 +169,14 @@ public class TheaterService implements ITheaterService {
             return Collections.emptyList();
         }
 
-        // Normalize search name to remove accents, convert to lowercase, and replace 'đ' with 'd'
         String normalizedSearch = Normalizer.normalize(name.trim().toLowerCase(), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .replaceAll("[đĐ]", "d");
         System.out.println("Normalized search name: " + normalizedSearch);
 
-        // Fetch all theaters
         List<Theater> theaters = theaterRepository.findAll();
         System.out.println("Total theaters fetched: " + theaters.size());
 
-        // Filter theaters in Java
         List<TheaterResponse> result = theaters.stream()
                 .filter(theater -> {
                     if (theater.getName() == null) {

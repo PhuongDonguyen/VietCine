@@ -73,6 +73,10 @@ export default function MovieShowtimes() {
   const [cinemas, setCinemas] = useState<Cinema[]>([]);
   const [brandsLoaded, setBrandsLoaded] = useState<boolean>(false);
 
+  const handleBookTicket = (showtimeId: number, movieId: number) => {
+    navigate(`/seat-selection?movieId=${movieId}&showtimeId=${showtimeId}`);
+  };
+
   // Generate dates for the next 7 days
   const generateDates = () => {
     const dates = [];
@@ -86,7 +90,7 @@ export default function MovieShowtimes() {
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      date.setHours(date.getHours() + 7);
+      date.setHours(date.getHours() + 0);
       console.log(
         "Generated date:",
         date.toISOString().split("T")[0],
@@ -743,13 +747,17 @@ export default function MovieShowtimes() {
                                 <button
                                   key={showtime.id}
                                   className="bg-gray-800 hover:bg-gray-700 transition duration-300 rounded-lg p-3 text-center"
-                                  onClick={() =>
-                                    navigate(`/booking/${showtime.id}`)
-                                  }
+                                  onClick={() => handleBookTicket(showtime.id, movie.id)}
                                 >
                                   <div className="text-white font-medium">
                                     {extractTime(showtime.startTime)} -{" "}
                                     {extractTime(showtime.endTime)}
+                                  </div>
+                                  <div className="text-gray-400 text-xs mt-1">
+                                    {showtime.screen.screenNumber}
+                                  </div>
+                                  <div className="text-gray-500 text-xs">
+                                    {showtime.screen.totalSeats} ghế
                                   </div>
                                 </button>
                               ))}
