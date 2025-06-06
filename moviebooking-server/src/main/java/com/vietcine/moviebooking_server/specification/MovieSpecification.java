@@ -7,6 +7,7 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -52,4 +53,18 @@ public class MovieSpecification {
             return cb.equal(root.get("isAvailable"), isAvailable);
         };
     }
+
+//    public static Specification<Movie> titleContainsNoAccent(String title) {
+//        return (root, query, cb) -> {
+//            if (title == null || title.trim().isEmpty()) return null;
+//            // Normalize title to remove accents and convert to lowercase
+//            String normalizedTitle = Normalizer.normalize(title.toLowerCase(), Normalizer.Form.NFD)
+//                    .replaceAll("\\p{M}", "");
+//            // Use SQL function to remove accents from the title column
+//            Expression<String> normalizedDbTitle = cb.function(
+//                    "unaccent", String.class, cb.lower(root.get("title"))
+//            );
+//            return cb.like(normalizedDbTitle, "%" + normalizedTitle + "%");
+//        };
+//    }
 }

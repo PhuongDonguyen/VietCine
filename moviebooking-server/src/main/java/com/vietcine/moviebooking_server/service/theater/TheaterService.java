@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
+import java.text.Normalizer;
 import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
@@ -141,6 +142,44 @@ public class TheaterService implements ITheaterService {
             }
         }
 
+        return result;
+    }
+
+    @Override
+    public List<TheaterResponse> searchTheatersByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            System.out.println("Search name is null or empty, returning empty list");
+            return Collections.emptyList();
+        }
+
+        // Normalize search name to remove accents, convert to lowercase, and replace 'đ' with 'd'
+        String normalizedSearch = Normalizer.normalize(name.trim().toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[đĐ]", "d");
+        System.out.println("Normalized search name: " + normalizedSearch);
+
+        // Fetch all theaters
+        List<Theater> theaters = theaterRepository.findAll();
+        System.out.println("Total theaters fetched: " + theaters.size());
+
+        // Filter theaters in Java
+        List<TheaterResponse> result = theaters.stream()
+                .filter(theater -> {
+                    if (theater.getName() == null) {
+                        System.out.println("Theater ID " + theater.getId() + " has null name");
+                        return false;
+                    }
+                    String normalizedName = Normalizer.normalize(theater.getName().toLowerCase(), Normalizer.Form.NFD)
+                            .replaceAll("\\p{M}", "")
+                            .replaceAll("[đĐ]", "d");
+                    boolean matches = normalizedName.contains(normalizedSearch);
+                    System.out.println("Theater name: " + theater.getName() + ", Normalized: " + normalizedName + ", Matches: " + matches);
+                    return matches;
+                })
+                .map(theaterMapper::toTheaterDTO)
+                .collect(Collectors.toList());
+
+        System.out.println("Theaters found: " + result.size());
         return result;
     }
 }

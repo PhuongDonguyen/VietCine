@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -116,5 +117,43 @@ public class MovieService implements IMovieService {
                 .orElseThrow(() -> new RuntimeException("Movie not found with id: " + id));
 
         return movieMapper.toMovieDTO(movie);
+    }
+
+    @Override
+    public List<MovieResponse> searchMoviesByTitle(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            System.out.println("Search title is null or empty, returning empty list");
+            return Collections.emptyList();
+        }
+
+        // Normalize search title to remove accents, convert to lowercase, and replace 'đ' with 'd'
+        String normalizedSearch = Normalizer.normalize(title.trim().toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[đĐ]", "d");
+        System.out.println("Normalized search title: " + normalizedSearch);
+
+        // Fetch all available movies
+        List<Movie> movies = movieRepository.findByIsAvailableTrueAndReleaseDateLessThanEqual(LocalDate.now());
+        System.out.println("Total movies fetched: " + movies.size());
+
+        // Filter movies in Java
+        List<MovieResponse> result = movies.stream()
+                .filter(movie -> {
+                    if (movie.getTitle() == null) {
+                        System.out.println("Movie ID " + movie.getId() + " has null title");
+                        return false;
+                    }
+                    String normalizedTitle = Normalizer.normalize(movie.getTitle().toLowerCase(), Normalizer.Form.NFD)
+                            .replaceAll("\\p{M}", "")
+                            .replaceAll("[đĐ]", "d");
+                    boolean matches = normalizedTitle.contains(normalizedSearch);
+                    System.out.println("Movie title: " + movie.getTitle() + ", Normalized: " + normalizedTitle + ", Matches: " + matches);
+                    return matches;
+                })
+                .map(movieMapper::toMovieDTO)
+                .collect(Collectors.toList());
+
+        System.out.println("Movies found: " + result.size());
+        return result;
     }
 }

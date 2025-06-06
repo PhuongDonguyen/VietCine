@@ -20,4 +20,6 @@ public interface IMovieService {
     MovieDetailResponse getMovieDetailBySlug(String slug);
 
     MovieResponse getMovieDetailById(Integer movieId);
+
+    List<MovieResponse> searchMoviesByTitle(String title);
 }
