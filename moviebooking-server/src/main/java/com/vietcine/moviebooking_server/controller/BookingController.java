@@ -3,6 +3,7 @@ package com.vietcine.moviebooking_server.controller;
 import com.vietcine.moviebooking_server.dto.request.BookingRequest;
 import com.vietcine.moviebooking_server.dto.request.BookingUpdateRequest;
 import com.vietcine.moviebooking_server.dto.response.ApiResponse;
+import com.vietcine.moviebooking_server.dto.response.BookingDetailResponse;
 import com.vietcine.moviebooking_server.dto.response.BookingResponse;
 import com.vietcine.moviebooking_server.entity.Booking;
 import com.vietcine.moviebooking_server.service.booking.BookingService;
@@ -13,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -48,6 +51,18 @@ public class BookingController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse(e.getMessage(), false, null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("An error occurred: " + e.getMessage(), false, null));
+        }
+    }
+
+    @GetMapping("/user/{userId}")
+    @Operation(summary = "Get user bookings", description = "Retrieves all active bookings for a specific user with detailed information")
+    public ResponseEntity<ApiResponse> getUserBookings(@PathVariable Integer userId) {
+        try {
+            List<BookingDetailResponse> bookings = bookingService.getUserBookings(userId);
+            return ResponseEntity.ok(new ApiResponse("User bookings retrieved successfully", true, bookings));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("An error occurred: " + e.getMessage(), false, null));

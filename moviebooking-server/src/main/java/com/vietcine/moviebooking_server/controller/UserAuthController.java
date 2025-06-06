@@ -137,7 +137,7 @@ public class UserAuthController {
                     new AuthenticationResponse(token, new UserAuthenticationResponse(user.getId(), user.getUid(), user.getEmail(), user.getFullName(), user.getCreatedAt(), user.getAvatar(), user.getRole()), userDetails.getAuthorities().toArray()[0].toString())
             ));
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body(new ApiResponse("Email hoặc mật khẩu không chính xác", null));
+            return ResponseEntity.status(401).body(new ApiResponse("Email hoặc mật khẩu không chính xác", false));
         }
     }
 }

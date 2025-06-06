@@ -4,11 +4,13 @@ import com.vietcine.moviebooking_server.dto.request.BookingFoodDTO;
 import com.vietcine.moviebooking_server.dto.request.BookingRequest;
 import com.vietcine.moviebooking_server.dto.request.BookingSeatDTO;
 import com.vietcine.moviebooking_server.dto.request.BookingUpdateRequest;
+import com.vietcine.moviebooking_server.dto.response.BookingDetailResponse;
 import com.vietcine.moviebooking_server.dto.response.BookingResponse;
 import com.vietcine.moviebooking_server.entity.*;
 import com.vietcine.moviebooking_server.mapper.BookingMapper;
 import com.vietcine.moviebooking_server.repository.*;
 import com.vietcine.moviebooking_server.service.mailer.EmailService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +21,14 @@ import java.util.List;
 import java.util.Set;
 
 @Service
+@AllArgsConstructor
 public class BookingService implements IBookingService {
 
     @Autowired
     private IBookingRepository bookingRepository;
+
+    @Autowired
+    private IVoucherUserRepository voucherUserRepository;
 
     @Autowired
     private IUserRepository userRepository;
@@ -55,7 +61,7 @@ public class BookingService implements IBookingService {
     private BookingMapper bookingMapper;
 
     @Override
-    @Transactional
+//    @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest) {
         // Validate User
         User user = userRepository.findById(Long.valueOf(bookingRequest.getUser()))
@@ -132,7 +138,7 @@ public class BookingService implements IBookingService {
         return bookingMapper.toBookingResponse(newBooking);
     }
 
-    @Transactional
+//    @Transactional
     public BookingResponse updateBooking(Integer id, BookingUpdateRequest updateRequest) {
         // Find existing booking
         Booking booking = bookingRepository.findById(id)
@@ -146,11 +152,16 @@ public class BookingService implements IBookingService {
         String newStatus;
         if ("Success".equalsIgnoreCase(updateRequest.getStatus())) {
             booking.setStatus("Success");
-            booking.setIsActive(true);
+            if (booking.getVoucherUserId() != null) {
+                markVoucherUserAsUsed(booking.getVoucherUserId(), true);
+            }
             newStatus = "booked";
         } else if ("Failed".equalsIgnoreCase(updateRequest.getStatus())) {
             booking.setStatus("Failed");
-            booking.setIsActive(false);
+            if (booking.getVoucherUserId() != null) {
+                markVoucherUserAsUsed(booking.getVoucherUserId(), false);
+
+            }
             newStatus = "available";
         } else {
             throw new IllegalArgumentException("Invalid status: " + updateRequest.getStatus() + ". Must be 'Success' or 'Failed'.");
@@ -180,12 +191,6 @@ public class BookingService implements IBookingService {
         return bookingMapper.toBookingResponse(updatedBooking);
     }
 
-    /**
-     * Helper method to update ShowtimeSeat status
-     * @param showtimeId The showtime ID
-     * @param seatId The seat ID
-     * @param status The new status to set
-     */
     private void updateShowtimeSeatStatus(Integer showtimeId, Integer seatId, String status) {
         ShowtimeSeat showtimeSeat = showtimeSeatRepository.findByShowtimeIdAndSeatId(showtimeId, seatId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -193,5 +198,31 @@ public class BookingService implements IBookingService {
 
         showtimeSeat.setStatus(status);
         showtimeSeatRepository.save(showtimeSeat);
+    }
+
+    @Transactional
+    public void markVoucherUserAsUsed(Integer voucherUserId, Boolean isUsed) {
+        VoucherUser voucherUser = voucherUserRepository.findById(voucherUserId)
+                .orElseThrow(() -> new IllegalArgumentException("VoucherUser not found with ID: " + voucherUserId));
+        voucherUser.setIsUsed(isUsed);
+        voucherUserRepository.save(voucherUser);
+    }
+
+    @Override
+    public List<BookingDetailResponse> getUserBookings(Integer userId) {
+        List<Booking> bookings = bookingRepository.findByUserIdAndIsActiveTrue(userId);
+        return bookings.stream()
+                .map(booking -> {
+                    BookingDetailResponse response = bookingMapper.toBookingDetailResponse(booking);
+                    if (booking.getVoucherUserId() != null) {
+                        VoucherUser voucherUser = voucherUserRepository.findById(booking.getVoucherUserId())
+                                .orElse(null);
+                        if (voucherUser != null) {
+                            response.setVoucher(bookingMapper.toVoucherResponse(voucherUser.getVoucher()));
+                        }
+                    }
+                    return response;
+                })
+                .toList();
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { User, Camera } from "lucide-react";
+import { User, Camera, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { NavBar } from "../components/Navbar";
 import axios from "axios";
 import { AuthContext } from "../context/authContext";
@@ -16,9 +16,54 @@ interface UserProfile {
     role: string | null;
 }
 
+interface BookingSeat {
+    id: number;
+    bookingId: number;
+    row: string;
+    column: number;
+}
+
+interface BookingFood {
+    id: number;
+    bookingId: number;
+    foodName: string;
+    quantity: number;
+    total: number;
+}
+
+interface Voucher {
+    id: number;
+    discount: number;
+    validFrom: string;
+    validUntil: string;
+    minBillPrice: number;
+    description: string;
+    theaterBrandId: number;
+    isActive: boolean;
+}
+
+interface Booking {
+    id: number;
+    userId: number;
+    showtimeId: number;
+    bookingDate: string;
+    total: number;
+    status: string;
+    discount: number;
+    paymentId: number;
+    isActive: boolean;
+    vnpTxnRef: string;
+    voucherUserId: number | null;
+    bookingSeats: BookingSeat[];
+    bookingFoods: BookingFood[];
+    voucher: Voucher | null;
+}
+
 export default function Profile() {
-    const { user: userContext } = useContext(AuthContext);
+    const { user: userContext, dispatch } = useContext(AuthContext);
     const [user, setUser] = useState<UserProfile | null>(null);
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [isLoadingBookings, setIsLoadingBookings] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<UserProfile | null>(null);
     const [successMessage, setSuccessMessage] = useState<string>("");
@@ -26,7 +71,6 @@ export default function Profile() {
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
-    // Added to force file input reset
     const [avatarInputKey, setAvatarInputKey] = useState(0);
 
     const VALID_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"];
@@ -35,6 +79,7 @@ export default function Profile() {
     useEffect(() => {
         if (userContext?.id) {
             fetchUserData();
+            fetchBookingHistory();
         }
     }, [userContext]);
 
@@ -54,12 +99,28 @@ export default function Profile() {
         }
     };
 
+    const fetchBookingHistory = async () => {
+        setIsLoadingBookings(true);
+        try {
+            const response = await axios.get(`http://localhost:8081/api/bookings/user/${userContext?.id}`);
+            if (response.data.success) {
+                setBookings(response.data.data);
+            } else {
+                console.error("Failed to fetch booking history");
+            }
+        } catch (error) {
+            console.error("Error fetching booking history:", error);
+        } finally {
+            setIsLoadingBookings(false);
+        }
+    };
+
     useEffect(() => {
         if (user && !isEditing) {
             setFormData(user);
             setPreviewAvatar(user.avatar || null);
             setAvatarFile(null);
-            setAvatarInputKey((prev) => prev + 1); // Reset file input
+            setAvatarInputKey((prev) => prev + 1);
         }
     }, [user, isEditing]);
 
@@ -72,13 +133,11 @@ export default function Profile() {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
 
-            // Validate file type
             if (!VALID_IMAGE_TYPES.includes(file.type)) {
                 setErrorMessage("Chỉ hỗ trợ định dạng ảnh JPG, PNG hoặc GIF");
                 return;
             }
 
-            // Validate file size
             if (file.size > MAX_FILE_SIZE) {
                 setErrorMessage("Kích thước ảnh không được vượt quá 5MB");
                 return;
@@ -101,7 +160,7 @@ export default function Profile() {
     };
 
     const validateName = (name: string) => {
-        const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/; // Allows letters and Vietnamese characters
+        const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/;
         return nameRegex.test(name);
     };
 
@@ -109,19 +168,16 @@ export default function Profile() {
         e.preventDefault();
         if (!formData) return;
 
-        // Custom validation for empty fields
         if (!formData.fullName || !formData.email || !formData.phone) {
             setErrorMessage("Tất cả các trường bắt buộc phải được điền");
             return;
         }
 
-        // Email validation
         if (!validateEmail(formData.email)) {
             setErrorMessage("Email không hợp lệ");
             return;
         }
 
-        // Name validation
         if (!validateName(formData.fullName)) {
             setErrorMessage("Tên không được chứa ký tự đặc biệt hoặc số");
             return;
@@ -150,9 +206,19 @@ export default function Profile() {
                 setSuccessMessage("Thông tin tài khoản đã được cập nhật thành công");
                 setErrorMessage("");
                 setAvatarFile(null);
-                setAvatarInputKey((prev) => prev + 1); // Reset file input
+                setAvatarInputKey((prev) => prev + 1);
 
-                setTimeout(() => setSuccessMessage(""), 3000);
+                setTimeout(() => setSuccessMessage(""), 2000);
+
+                dispatch({
+                    type: "UPDATE",
+                    payload: {
+                        id: response.data.data.id.toString(),
+                        fullName: response.data.data.fullName,
+                        email: response.data.data.email,
+                        avatar: response.data.data.avatar || null,
+                    },
+                });
             } else {
                 setErrorMessage("Cập nhật thông tin thất bại: " + response.data.message);
             }
@@ -168,8 +234,25 @@ export default function Profile() {
         setIsEditing(false);
         setPreviewAvatar(user?.avatar || null);
         setAvatarFile(null);
-        setAvatarInputKey((prev) => prev + 1); // Reset file input
+        setAvatarInputKey((prev) => prev + 1);
         setErrorMessage("");
+    };
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(amount);
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('vi-VN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     if (!user || !formData) {
@@ -238,7 +321,7 @@ export default function Profile() {
                                     </div>
                                     {isEditing && (
                                         <input
-                                            key={avatarInputKey} // Force re-render to clear input
+                                            key={avatarInputKey}
                                             type="file"
                                             accept="image/jpeg,image/png,image/gif"
                                             onChange={handleAvatarChange}
@@ -508,20 +591,128 @@ export default function Profile() {
                                 </form>
                             </div>
                         </div>
+
+                        {/* Booking History Section */}
                         <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg mt-6">
                             <div className="p-6">
                                 <h3
                                     data-testid="recent-tickets-title"
                                     className="text-xl font-semibold text-white mb-4"
                                 >
-                                    Vé gần đây
+                                    Lịch sử đặt vé
                                 </h3>
-                                <div
-                                    data-testid="no-tickets-message"
-                                    className="block text-sm text-gray-400"
-                                >
-                                    Không có lịch sử đặt vé nào
-                                </div>
+
+                                {isLoadingBookings ? (
+                                    <div className="text-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                                        <p className="text-gray-400 mt-2">Đang tải lịch sử đặt vé...</p>
+                                    </div>
+                                ) : bookings.length === 0 ? (
+                                    <div
+                                        data-testid="no-tickets-message"
+                                        className="text-gray-400 text-center py-8"
+                                    >
+                                        Không có lịch sử đặt vé nào
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {bookings.map((booking) => (
+                                            <div
+                                                key={booking.id}
+                                                className="bg-gray-800 rounded-lg p-4 border border-gray-700"
+                                            >
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <div className="flex items-center space-x-2 mb-1">
+                                                            <span className="text-white font-medium">
+                                                                Mã đặt vé: #{booking.id}
+                                                            </span>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${booking.status === 'Success'
+                                                                ? 'bg-green-900/50 text-green-300 border border-green-600'
+                                                                : 'bg-red-900/50 text-red-300 border border-red-600'
+                                                                }`}>
+                                                                {booking.status === 'Success' ? (
+                                                                    <div className="flex items-center space-x-1">
+                                                                        <CheckCircle className="h-3 w-3" />
+                                                                        <span>Thành công</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center space-x-1">
+                                                                        <XCircle className="h-3 w-3" />
+                                                                        <span>Thất bại</span>
+                                                                    </div>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1 text-gray-400 text-sm">
+                                                            <Calendar className="h-4 w-4" />
+                                                            <span>{formatDate(booking.bookingDate)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-white font-bold text-lg">
+                                                            {formatCurrency(booking.total)}
+                                                        </div>
+                                                        {booking.discount > 0 && (
+                                                            <div className="text-green-400 text-sm">
+                                                                Giảm {formatCurrency(booking.discount)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <div className="text-gray-400 mb-2">Chi tiết ghế:</div>
+                                                        {booking.bookingSeats.length > 0 ? (
+                                                            <div className="text-white">
+                                                                {booking.bookingSeats.map((seat) => (
+                                                                    <span key={seat.id} className="mr-2">
+                                                                        {seat.row}{seat.column}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-500">Không có ghế</div>
+                                                        )}
+                                                    </div>
+
+                                                    <div>
+                                                        <div className="text-gray-400 mb-2">Đồ ăn & nước uống:</div>
+                                                        {booking.bookingFoods.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {booking.bookingFoods.map((food) => (
+                                                                    <div key={food.id} className="text-white text-xs">
+                                                                        {food.quantity}x {food.foodName}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-500">Không có</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {booking.voucher && (
+                                                    <div className="mt-3 p-2 bg-green-900/20 border border-green-600/30 rounded">
+                                                        <div className="text-green-400 text-sm font-medium">
+                                                            Voucher đã sử dụng:
+                                                        </div>
+                                                        <div className="text-green-300 text-xs">
+                                                            {booking.voucher.description}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="mt-3 pt-3 border-t border-gray-700">
+                                                    <div className="text-gray-400 text-xs">
+                                                        Mã giao dịch: {booking.vnpTxnRef}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

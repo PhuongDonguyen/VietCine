@@ -8,10 +8,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@RestController // Changed from @Controller to @RestController
+@RestController
 @RequestMapping("/api/users")
 @Tag(name = "Users", description = "APIs for managing user profiles")
 public class UserController {
@@ -52,6 +55,30 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(400).body(
                     new ApiResponse("Failed to update user: " + e.getMessage(), false, null)
+            );
+        }
+    }
+
+    @GetMapping("/profile")
+    @Operation(summary = "Get current user profile", description = "Retrieves the profile of the currently authenticated user")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUserProfile() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+                return ResponseEntity.status(401).body(
+                        new ApiResponse<UserResponse>("Unauthorized", false, null)
+                );
+            }
+
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            String username = userDetails.getUsername();
+
+            UserResponse user = userService.getUserByEmail(username);
+
+            return ResponseEntity.ok(new ApiResponse<UserResponse>("Success", true, user));
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(
+                    new ApiResponse<UserResponse>("User not found: " + e.getMessage(), false, null)
             );
         }
     }

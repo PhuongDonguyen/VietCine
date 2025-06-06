@@ -61,6 +61,11 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new DataIntegrityViolationException("User not found"));
+        return userMapper.toUserDTO(user);
+    }
+
     public UserResponse getUserById(Integer id) {
         User user = userRepository.findById(Long.valueOf(id)).orElseThrow(() -> new DataIntegrityViolationException("User not found"));
         return userMapper.toUserDTO(user);

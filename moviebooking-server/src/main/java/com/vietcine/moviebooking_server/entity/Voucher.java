@@ -46,4 +46,7 @@ public class Voucher {
     @JoinColumn(name = "TheaterBrandId", nullable = false)
     private TheaterBrand theaterBrand;
 
+    @NotNull
+    @Column(name = "IsActive", nullable = false)
+    private Boolean isActive;
 }

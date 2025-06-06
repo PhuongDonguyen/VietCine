@@ -93,6 +93,18 @@ interface BookingResponse {
     foodItems: { foodId: number; quantity: number; total: number }[];
 }
 
+interface Voucher {
+    voucherId: number;
+    discount: number;
+    validFrom: string;
+    validUntil: string;
+    minBillPrice: number;
+    description: string;
+    theaterBrandId: number;
+    voucherUserId: number;
+    isUsed: boolean;
+}
+
 export default function SeatSelection() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -105,6 +117,7 @@ export default function SeatSelection() {
     const [error, setError] = useState<string | null>(null);
     const [showtime, setShowtime] = useState<Showtime | null>(null);
     const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
+    const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
     const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
     const [seatPrices, setSeatPrices] = useState<SeatPrice[]>([]);
     const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
@@ -226,13 +239,19 @@ export default function SeatSelection() {
         setIsFoodModalOpen(false);
     };
 
-    const calculateTotalAmount = (seats: SelectedSeat[], foods: FoodItem[] | null): number => {
+    const calculateTotalAmount = (seats: SelectedSeat[], foods: FoodItem[] | null, voucher: Voucher | null = null): number => {
         const seatsTotal = seats.reduce((total, seat) => total + seat.price, 0);
         let foodTotal = 0;
         if (foods != null) {
             foodTotal = foods.reduce((total, food) => total + (food.price * food.quantity), 0);
         }
-        return seatsTotal + foodTotal;
+        const subtotal = seatsTotal + foodTotal;
+        const discount = voucher ? voucher.discount : 0;
+        return subtotal - discount;
+    };
+
+    const handleVoucherSelect = (voucher: Voucher | null) => {
+        setSelectedVoucher(voucher);
     };
 
     const formatPrice = (price: number): string => {
@@ -246,7 +265,7 @@ export default function SeatSelection() {
 
     const initiateVNPayPayment = async (foods: FoodItem[]) => {
         try {
-            const totalAmount = calculateTotalAmount(selectedSeats, foods);
+            const totalAmount = calculateTotalAmount(selectedSeats, foods, selectedVoucher);
             const seatNumbersList = selectedSeats.map(seat => seat.SeatNumber).join(", ");
 
 
@@ -268,13 +287,13 @@ export default function SeatSelection() {
             const paymentUrl = paymentResponse.data;
             if (paymentUrl) {
                 const bookingRequest = {
-                    user: user.id, // Replace with actual user ID from authentication context
+                    user: user.id,
                     showtime: showtime?.id,
                     total: totalAmount,
-                    status: "pending",
-                    discount: 0, // Replace with actual discount if applicable
-                    payment: 1, // Replace with actual payment method ID
-                    voucherUserId: null, // Replace with actual voucher ID if applicable
+                    status: "Pending",
+                    discount: selectedVoucher ? selectedVoucher.discount : 0,
+                    payment: 1,
+                    voucherUserId: selectedVoucher ? selectedVoucher.voucherUserId : null,
                     seats: selectedSeats.map(seat => ({
                         seat: seat.SeatId
                     })),
@@ -443,6 +462,8 @@ export default function SeatSelection() {
                                 priceIncrease: price.priceIncrease,
                                 totalPrice: price.totalPrice
                             })) : seatTypes}
+                            userId={user.id} // Add this prop
+                            onVoucherSelect={handleVoucherSelect} // Add this prop
                         />
                     </div>
                 </div>
