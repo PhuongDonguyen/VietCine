@@ -148,6 +148,7 @@ public class TheaterService implements ITheaterService {
                 movieWithShowtimes.setPosterUrl(movie.getPosterUrl());
                 movieWithShowtimes.setRating(movie.getRating());
                 movieWithShowtimes.setDuration(movie.getDuration());
+                movieWithShowtimes.setSlug(movie.getSlug());
                 movieWithShowtimes.setGenres(new ArrayList<>(movie.getGenres()));
                 movieWithShowtimes.setShowtimes(showtimes); // Showtimes are still in original DTO form (UTC Instant)
                 for (ShowtimeResponse showtime : showtimes) {
