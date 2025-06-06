@@ -1,303 +1,362 @@
-import { NavBar } from "../components/Navbar"
-import { Footer } from "../components/Footer"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import axios from "axios"
+import { NavBar } from "../components/Navbar";
+import { Footer } from "../components/Footer";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 interface Cinema {
-  id: number
-  name: string
-  logo?: string
-  slug?: string
-  brand: string
-  address?: string
-  city?: string
-  totalScreens?: number
+  id: number;
+  name: string;
+  logo?: string;
+  slug?: string;
+  theaterBrand: CinemaBrand;
+  address?: string;
+  city?: string;
+  totalScreens?: number;
 }
 
 interface Genre {
-  id: number
-  name: string
+  id: number;
+  name: string;
 }
 
 interface Screen {
-  id: number
-  screenNumber: string
-  totalSeats: number
+  id: number;
+  screenNumber: string;
+  totalSeats: number;
   theater: {
-    id: number
-    name: string
-    address: string
-    city: string
-    totalScreens: number
-    theaterBrandId: number
-  }
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    totalScreens: number;
+    theaterBrandId: number;
+  };
 }
 
 interface Showtime {
-  id: number
-  startTime: string
-  endTime: string
-  screen: Screen
-  availableSeats: string
+  id: number;
+  startTime: string;
+  endTime: string;
+  screen: Screen;
+  availableSeats: string;
 }
 
 interface Movie {
-  id: number
-  title: string
-  posterUrl: string
-  rating: number
-  duration: number
-  genres: Genre[]
-  showtimes: Showtime[]
+  id: number;
+  title: string;
+  posterUrl: string;
+  rating: number;
+  duration: number;
+  genres: Genre[];
+  showtimes: Showtime[];
 }
 
 interface CinemaBrand {
-  id: number
-  name: string
-  logo: string
+  id: number;
+  theaterBrandName: string;
+  logo: string;
 }
 
 export default function MovieShowtimes() {
-  const navigate = useNavigate()
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedBrand, setSelectedBrand] = useState<number | "all">("all")
-  const [selectedCinema, setSelectedCinema] = useState<number | null>(null)
-  const [selectedDate, setSelectedDate] = useState<string>("")
-  const [city, setCity] = useState<string>("")
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const [cities, setCities] = useState<string[]>([])
-  const [cinemaBrands, setCinemaBrands] = useState<CinemaBrand[]>([])
-  const [cinemas, setCinemas] = useState<Cinema[]>([])
-  const [brandsLoaded, setBrandsLoaded] = useState<boolean>(false)
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<number | "all">("all");
+  const [selectedCinema, setSelectedCinema] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [city, setCity] = useState<string>("");
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [cities, setCities] = useState<string[]>([]);
+  const [cinemaBrands, setCinemaBrands] = useState<CinemaBrand[]>([]);
+  const [cinemas, setCinemas] = useState<Cinema[]>([]);
+  const [brandsLoaded, setBrandsLoaded] = useState<boolean>(false);
+
+  const handleBookTicket = (showtimeId: number, movieId: number) => {
+    navigate(`/seat-selection?movieId=${movieId}&showtimeId=${showtimeId}`);
+  };
 
   // Generate dates for the next 7 days
   const generateDates = () => {
-    const dates = []
-    const today = new Date()
+    const dates = [];
+    const today = new Date();
+    console.log(
+      "Today:",
+      today.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+    );
+    console.log("Today ISO:", today.toISOString());
 
     for (let i = 0; i < 7; i++) {
-      const date = new Date(today)
-      date.setDate(today.getDate() + i)
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      date.setHours(date.getHours() + 0);
+      console.log(
+        "Generated date:",
+        date.toISOString().split("T")[0],
+        "Day:",
+        date.getDate()
+      );
 
-      const day = date.getDate()
+      const day = date.getDate();
       const dayName =
-        i === 0 ? "Hôm nay" : ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"][date.getDay()]
+        i === 0
+          ? "Hôm nay"
+          : ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"][
+              date.getDay()
+            ];
 
       dates.push({
         date: date.toISOString().split("T")[0],
         day,
         dayName,
-      })
+      });
     }
 
-    return dates
-  }
+    return dates;
+  };
 
-  const dates = generateDates()
+  const dates = generateDates();
 
   useEffect(() => {
     // Gọi fetchCities khi component mount
-    fetchCities()
+    fetchCities();
     // Đặt ngày mặc định là hôm nay
-    setSelectedDate(dates[0].date)
-  }, [])
+    setSelectedDate(dates[0].date);
+  }, []);
 
   useEffect(() => {
     if (city) {
       // Chỉ gọi fetchCinemaBrands khi có city
-      fetchCinemaBrands(city)
+      fetchCinemaBrands(city);
     }
-  }, [city])
+  }, [city]);
 
   useEffect(() => {
     // Chỉ gọi fetchCinemas sau khi brands đã được load
     if (city && brandsLoaded) {
-      fetchCinemas()
+      fetchCinemas();
     }
-  }, [city, selectedBrand, brandsLoaded])
+  }, [city, selectedBrand, brandsLoaded]);
 
   useEffect(() => {
     // Reset selected cinema when brand changes
     if (selectedBrand !== "all") {
-      setSelectedCinema(null)
+      setSelectedCinema(null);
     }
-  }, [selectedBrand])
+  }, [selectedBrand]);
 
   useEffect(() => {
     // Fetch showtimes when cinema and date selection changes
     if (selectedCinema !== null && selectedDate) {
-      fetchMovieShowtimes()
+      fetchMovieShowtimes();
     }
-  }, [selectedCinema, selectedDate])
+  }, [selectedCinema, selectedDate]);
+
+  useEffect(() => {
+    setSelectedCinema(null); // Reset khi city thay đổi
+    if (city) {
+      fetchCinemaBrands(city);
+    }
+  }, [city]);
 
   const fetchCities = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
-      const response = await axios.get("http://localhost:8081/api/theaters/cities")
+      const response = await axios.get(
+        "http://localhost:8081/api/theaters/cities"
+      );
       if (response.data.success) {
-        setCities(response.data.data) // Lưu danh sách tỉnh/thành phố từ API
+        setCities(response.data.data); // Lưu danh sách tỉnh/thành phố từ API
         // Đặt tỉnh mặc định là "Hồ Chí Minh" nếu có, hoặc tỉnh đầu tiên
-        const defaultCity = response.data.data.includes("Hồ Chí Minh") ? "Hồ Chí Minh" : response.data.data[0] || ""
-        setCity(defaultCity)
+        const defaultCity = response.data.data.includes("Hồ Chí Minh")
+          ? "Hồ Chí Minh"
+          : response.data.data[0] || "";
+        setCity(defaultCity);
       } else {
-        setError("Không thể tải danh sách tỉnh/thành phố")
+        setError("Không thể tải danh sách tỉnh/thành phố");
       }
-      setLoading(false)
+      setLoading(false);
     } catch (err) {
-      setError("Lỗi khi lấy danh sách tỉnh/thành phố")
-      setLoading(false)
-      console.error("Error fetching cities:", err)
+      setError("Lỗi khi lấy danh sách tỉnh/thành phố");
+      setLoading(false);
+      console.error("Error fetching cities:", err);
     }
-  }
+  };
 
   const fetchCinemaBrands = async (selectedCity: string) => {
     try {
-      setLoading(true)
-      setError(null)
-      setBrandsLoaded(false) // Reset trạng thái load
+      setLoading(true);
+      setError(null);
+      setBrandsLoaded(false);
 
       const response = await axios.get(
-        `http://localhost:8081/api/theater-brands?city=${encodeURIComponent(selectedCity)}`,
-      )
+        `http://localhost:8081/api/theater-brands?city=${encodeURIComponent(
+          selectedCity
+        )}`
+      );
       if (response.data.success) {
-        setCinemaBrands(response.data.data) // Lưu danh sách thương hiệu rạp từ API
-        setBrandsLoaded(true) // Đánh dấu đã load xong
+        setCinemaBrands(response.data.data);
+        setBrandsLoaded(true); // Chỉ đặt khi thành công
       } else {
-        setError("Không thể tải danh sách hệ thống rạp")
+        setError("Không thể tải danh sách hệ thống rạp");
+        setBrandsLoaded(true); // Vẫn cho phép tiếp tục để tránh treo
       }
-      setLoading(false)
+      setLoading(false);
     } catch (err) {
-      setError("Lỗi khi lấy danh sách hệ thống rạp")
-      setLoading(false)
-      console.error("Error fetching cinema brands:", err)
-      // Đặt brandsLoaded = true để vẫn có thể tiếp tục dù có lỗi
-      setBrandsLoaded(true)
+      setError("Lỗi khi lấy danh sách hệ thống rạp");
+      setLoading(false);
+      setBrandsLoaded(true);
+      console.error("Error fetching cinema brands:", err);
     }
-  }
+  };
 
   const fetchCinemas = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
-      let url = `http://localhost:8081/api/theaters/all?city=${encodeURIComponent(city)}`
+      let url = `http://localhost:8081/api/theaters/all?city=${encodeURIComponent(
+        city
+      )}`;
       if (selectedBrand !== "all") {
-        url = `http://localhost:8081/api/theaters?brandId=${selectedBrand}&city=${encodeURIComponent(city)}`
+        url = `http://localhost:8081/api/theaters?brandId=${selectedBrand}&city=${encodeURIComponent(
+          city
+        )}`;
       }
 
-      const response = await axios.get(url)
+      const response = await axios.get(url);
       if (response.data.success) {
-        const fetchedCinemas: Cinema[] = response.data.data.map((cinema: any) => {
-          // Tìm brand tương ứng
-          const brand = cinemaBrands.find((b) => b.id === cinema.theaterBrandId)
+        const fetchedCinemas: Cinema[] = response.data.data.map(
+          (cinema: any) => {
+            // Tìm brand tương ứng
+            const brand = cinemaBrands.find(
+              (b) => b.id === cinema.theaterBrandId
+            );
 
-          return {
-            id: cinema.id,
-            name: cinema.name,
-            logo: brand?.logo || "/placeholder.svg", // Chỉ sử dụng logo từ API hoặc placeholder
-            slug: cinema.name.toLowerCase().replace(/\s+/g, "-"),
-            brand: cinema.theaterBrandId.toString(),
-            address: cinema.address,
-            city: cinema.city,
-            totalScreens: cinema.totalScreens,
+            return {
+              id: cinema.id,
+              name: cinema.name,
+              logo: cinema.theaterBrand.logo || "/placeholder.svg", // Chỉ sử dụng logo từ API hoặc placeholder
+              slug: cinema.name.toLowerCase().replace(/\s+/g, "-"),
+              theaterBrand: brand || {
+                id: cinema.theaterBrand.id,
+                theaterBrandName: cinema.theaterBrand.theaterBrandName,
+                logo: cinema.theaterBrand.logo,
+              },
+              address: cinema.address,
+              city: cinema.city,
+              totalScreens: cinema.totalScreens,
+            };
           }
-        })
-        setCinemas(fetchedCinemas)
+        );
+        setCinemas(fetchedCinemas);
       } else {
-        setError("Không thể tải danh sách rạp chiếu phim")
+        setError("Không thể tải danh sách rạp chiếu phim");
       }
-      setLoading(false)
+      setLoading(false);
     } catch (err) {
-      setError("Lỗi khi lấy danh sách rạp chiếu phim")
-      setLoading(false)
-      console.error("Error fetching cinemas:", err)
+      setError("Lỗi khi lấy danh sách rạp chiếu phim");
+      setLoading(false);
+      console.error("Error fetching cinemas:", err);
     }
-  }
+  };
 
   // Trích xuất thời gian từ ISO string sang HH:MM
   const extractTime = (isoString: string) => {
+    if (!isoString || !isoString.includes("T")) return "N/A";
     try {
-      // Lấy phần thời gian từ chuỗi ISO
-      const timeString = isoString.split("T")[1]
-      // Lấy giờ và phút
-      return timeString.substring(0, 5)
+      // Tạo đối tượng Date từ chuỗi ISO
+      const date = new Date(isoString);
+      // Định nghĩa options đúng kiểu DateTimeFormatOptions
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: "Asia/Ho_Chi_Minh",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false, // Định dạng 24 giờ
+      };
+      // Lấy thời gian định dạng HH:MM
+      return date.toLocaleTimeString("en-US", options).substring(0, 5);
     } catch (error) {
-      console.error("Error extracting time:", error)
-      return isoString // Trả về chuỗi gốc nếu có lỗi
+      console.error("Error extracting time:", error);
+      return "N/A";
     }
-  }
+  };
 
   const fetchMovieShowtimes = async () => {
-    if (!selectedCinema || !selectedDate) return
+    if (!selectedCinema || !selectedDate) return;
 
     try {
-      setLoading(true)
-      setError(null)
-      setMovies([])
+      setLoading(true);
+      setError(null);
+      setMovies([]);
 
-      const url = `http://localhost:8081/api/theaters/${selectedCinema}/movies?date=${selectedDate}`
-      const response = await axios.get(url)
+      const url = `http://localhost:8081/api/theaters/${selectedCinema}/movies?date=${selectedDate}`;
+      const response = await axios.get(url);
 
       if (response.data.success) {
-        setMovies(response.data.data)
+        setMovies(response.data.data);
       } else {
-        setError("Không thể tải lịch chiếu phim")
+        setError("Không thể tải lịch chiếu phim");
       }
-      setLoading(false)
+      setLoading(false);
     } catch (err) {
-      setError("Lỗi khi lấy lịch chiếu phim")
-      setLoading(false)
-      console.error("Error fetching movie showtimes:", err)
+      setError("Lỗi khi lấy lịch chiếu phim");
+      setLoading(false);
+      console.error("Error fetching movie showtimes:", err);
     }
-  }
+  };
 
   const handleDateChange = (date: string) => {
-    setSelectedDate(date)
-  }
+    setSelectedDate(date);
+  };
 
   const handleBrandChange = (brandId: number | "all") => {
-    setSelectedBrand(brandId)
+    setSelectedBrand(brandId);
     // Reset cinema selection khi thay đổi brand
-    setSelectedCinema(null)
-  }
+    setSelectedCinema(null);
+  };
 
   const handleCinemaChange = (cinemaId: number) => {
-    setSelectedCinema(cinemaId)
-  }
+    setSelectedCinema(cinemaId);
+  };
 
   const filterCinemasBySearch = () => {
-    let filteredCinemas = cinemas
+    let filteredCinemas = cinemas;
 
     if (selectedBrand !== "all") {
-      filteredCinemas = filteredCinemas.filter((cinema) => cinema.brand === selectedBrand.toString())
+      filteredCinemas = filteredCinemas.filter(
+        (cinema) =>
+          cinema.theaterBrand.id.toString() === selectedBrand.toString()
+      );
     }
 
     if (searchQuery) {
       filteredCinemas = filteredCinemas.filter((cinema) =>
-        cinema.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+        cinema.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
     // Lọc theo city (API đã tự động lọc theo city, nên phần này có thể bỏ nếu không cần)
-    filteredCinemas = filteredCinemas.filter((cinema) => cinema.city === city)
+    filteredCinemas = filteredCinemas.filter((cinema) => cinema.city === city);
 
-    return filteredCinemas
-  }
+    return filteredCinemas;
+  };
 
   // Get the selected cinema details
-  const selectedCinemaDetails = selectedCinema !== null ? cinemas.find((cinema) => cinema.id === selectedCinema) : null
+  const selectedCinemaDetails =
+    selectedCinema !== null
+      ? cinemas.find((cinema) => cinema.id === selectedCinema)
+      : null;
 
   // Lấy logo của brand đã chọn
   const getSelectedBrandLogo = () => {
-    if (selectedBrand === "all") return null
-    const brand = cinemaBrands.find((b) => b.id === selectedBrand)
-    return brand?.logo || "/placeholder.svg"
-  }
+    if (selectedBrand === "all") return null;
+    const brand = cinemaBrands.find((b) => b.id === selectedBrand);
+    return brand?.logo || "/placeholder.svg";
+  };
 
   return (
     <div
@@ -320,14 +379,18 @@ export default function MovieShowtimes() {
         {/* Showtimes Content */}
         <section className="py-12 relative z-10">
           <div className="container mx-auto px-4">
-            <h1 className="text-4xl font-bold text-center text-red-500 mb-10">Lịch chiếu phim</h1>
+            <h1 className="text-4xl font-bold text-center text-red-500 mb-10">
+              Lịch chiếu phim
+            </h1>
 
             {/* Location & Cinema Selection */}
             <div className="bg-white/5 backdrop-blur-sm rounded-lg p-6 mb-10">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Location Selection */}
                 <div className="w-full md:w-1/3">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Vị trí</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Vị trí
+                  </label>
                   <div className="relative">
                     <select
                       className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -367,7 +430,9 @@ export default function MovieShowtimes() {
 
                 {/* Search Cinema */}
                 <div className="w-full md:w-1/3">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">&nbsp;</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    &nbsp;
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -398,13 +463,17 @@ export default function MovieShowtimes() {
 
               {/* Cinema Brand Logos */}
               <div className="mt-6">
-                <h3 className="text-white text-lg mb-3">Hệ thống rạp chiếu phim</h3>
+                <h3 className="text-white text-lg mb-3">
+                  Hệ thống rạp chiếu phim
+                </h3>
                 <div className="flex flex-wrap gap-3 items-center mb-6">
                   {/* All cinemas button */}
                   <button
                     onClick={() => handleBrandChange("all")}
                     className={`flex flex-col items-center p-2 rounded-md transition duration-300 ${
-                      selectedBrand === "all" ? "bg-white/20 border-2 border-red-500" : "bg-white/10 hover:bg-white/15"
+                      selectedBrand === "all"
+                        ? "bg-white/20 border-2 border-red-500"
+                        : "bg-white/10 hover:bg-white/15"
                     }`}
                   >
                     <div className="w-12 h-12 flex items-center justify-center bg-white rounded-full mb-1">
@@ -434,11 +503,13 @@ export default function MovieShowtimes() {
                       <div className="w-12 h-12 flex items-center justify-center bg-white rounded-lg mb-1 p-1">
                         <img
                           src={brand.logo || "/placeholder.svg"}
-                          alt={brand.name}
+                          alt={brand.theaterBrandName}
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>
-                      <span className="text-xs text-center">{brand.name.split(" ")[0]}</span>
+                      <span className="text-xs text-center">
+                        {brand.theaterBrandName.split(" ")[0]}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -452,7 +523,10 @@ export default function MovieShowtimes() {
                   {selectedBrand !== "all" ? (
                     <img
                       src={getSelectedBrandLogo() || "/placeholder.svg"}
-                      alt={`${cinemaBrands.find((b) => b.id === selectedBrand)?.name} Logo`}
+                      alt={`${
+                        cinemaBrands.find((b) => b.id === selectedBrand)
+                          ?.theaterBrandName
+                      } Logo`}
                       className="w-12 h-12 object-contain bg-white rounded-md p-1 mr-4"
                     />
                   ) : (
@@ -470,7 +544,10 @@ export default function MovieShowtimes() {
                   <div>
                     <h2 className="text-xl font-bold text-white">
                       {selectedBrand !== "all"
-                        ? `Rạp chiếu phim ${cinemaBrands.find((b) => b.id === selectedBrand)?.name}`
+                        ? `Rạp chiếu phim ${
+                            cinemaBrands.find((b) => b.id === selectedBrand)
+                              ?.theaterBrandName
+                          }`
                         : "Lịch chiếu phim - Tất cả hệ thống rạp"}
                     </h2>
                   </div>
@@ -478,7 +555,9 @@ export default function MovieShowtimes() {
 
                 {/* Danh sách rạp */}
                 <div className="mb-8">
-                  <h3 className="text-white text-lg mb-4">Chọn rạp để xem lịch chiếu</h3>
+                  <h3 className="text-white text-lg mb-4">
+                    Chọn rạp để xem lịch chiếu
+                  </h3>
                   {loading ? (
                     <div className="flex justify-center items-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
@@ -500,7 +579,9 @@ export default function MovieShowtimes() {
                           </div>
                           <div className="text-left">
                             <h3 className="text-white">{cinema.name}</h3>
-                            <p className="text-gray-400 text-sm">{cinema.address || "Địa chỉ không có sẵn"}</p>
+                            <p className="text-gray-400 text-sm">
+                              {cinema.address || "Địa chỉ không có sẵn"}
+                            </p>
                           </div>
                           <div className="ml-auto">
                             <svg
@@ -542,11 +623,15 @@ export default function MovieShowtimes() {
                     className="w-12 h-12 object-contain bg-white rounded-md p-1 mr-4"
                   />
                   <div>
-                    <h2 className="text-xl font-bold text-white">Lịch chiếu phim {selectedCinemaDetails?.name}</h2>
+                    <h2 className="text-xl font-bold text-white">
+                      Lịch chiếu phim {selectedCinemaDetails?.name}
+                    </h2>
                     <p className="text-gray-400 text-sm mt-1">
                       {selectedCinemaDetails?.address || ""}
                       {selectedCinemaDetails?.address && (
-                        <span className="text-blue-400 ml-2 cursor-pointer">[Bản đồ]</span>
+                        <span className="text-blue-400 ml-2 cursor-pointer">
+                          [Bản đồ]
+                        </span>
                       )}
                     </p>
                   </div>
@@ -597,7 +682,9 @@ export default function MovieShowtimes() {
                       <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                       <div className="w-3 h-3 bg-white rounded-full animate-bounce"></div>
                     </div>
-                    <div className="text-white">Đang tải lịch chiếu phim...</div>
+                    <div className="text-white">
+                      Đang tải lịch chiếu phim...
+                    </div>
                   </div>
                 ) : error ? (
                   <div className="flex justify-center items-center h-64">
@@ -605,12 +692,17 @@ export default function MovieShowtimes() {
                   </div>
                 ) : movies.length === 0 ? (
                   <div className="flex justify-center items-center h-64">
-                    <div className="text-gray-400">Không có lịch chiếu phim nào cho ngày đã chọn</div>
+                    <div className="text-gray-400">
+                      Không có lịch chiếu phim nào cho ngày đã chọn
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-8">
                     {movies.map((movie) => (
-                      <div key={movie.id} className="bg-gray-900/80 rounded-lg p-6">
+                      <div
+                        key={movie.id}
+                        className="bg-gray-900/80 rounded-lg p-6"
+                      >
                         <div className="flex flex-col md:flex-row gap-6">
                           {/* Movie Poster and Info */}
                           <div className="flex-shrink-0 w-full md:w-64">
@@ -635,9 +727,13 @@ export default function MovieShowtimes() {
 
                           {/* Movie Details and Showtimes */}
                           <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-2">{movie.title}</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">
+                              {movie.title}
+                            </h3>
                             <div className="text-gray-400 mb-4">
-                              {movie.genres.map((genre) => genre.name).join(", ")}
+                              {movie.genres
+                                .map((genre) => genre.name)
+                                .join(", ")}
                             </div>
 
                             {/* Show Format */}
@@ -651,10 +747,17 @@ export default function MovieShowtimes() {
                                 <button
                                   key={showtime.id}
                                   className="bg-gray-800 hover:bg-gray-700 transition duration-300 rounded-lg p-3 text-center"
-                                  onClick={() => navigate(`/booking/${showtime.id}`)}
+                                  onClick={() => handleBookTicket(showtime.id, movie.id)}
                                 >
                                   <div className="text-white font-medium">
-                                    {extractTime(showtime.startTime)} - {extractTime(showtime.endTime)}
+                                    {extractTime(showtime.startTime)} -{" "}
+                                    {extractTime(showtime.endTime)}
+                                  </div>
+                                  <div className="text-gray-400 text-xs mt-1">
+                                    {showtime.screen.screenNumber}
+                                  </div>
+                                  <div className="text-gray-500 text-xs">
+                                    {showtime.screen.totalSeats} ghế
                                   </div>
                                 </button>
                               ))}
@@ -673,5 +776,5 @@ export default function MovieShowtimes() {
       {/* Footer */}
       <Footer />
     </div>
-  )
+  );
 }

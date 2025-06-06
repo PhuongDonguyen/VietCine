@@ -108,4 +108,18 @@ public class TheaterController {
             );
         }
     }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search theaters by name",
+            description = "Returns a list of theaters whose names contain the search term (case-insensitive, non-accented, with 'đ' treated as 'd').")
+    public ResponseEntity<ApiResponse> searchTheatersByName(@RequestParam String name) {
+        try {
+            List<TheaterResponse> theaters = theaterService.searchTheatersByName(name);
+            return ResponseEntity.ok(new ApiResponse("Success", true, theaters));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                    new ApiResponse("Error searching theaters: " + e.getMessage(), false, null)
+            );
+        }
+    }
 }

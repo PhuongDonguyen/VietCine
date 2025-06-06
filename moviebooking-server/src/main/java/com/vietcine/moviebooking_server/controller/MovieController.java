@@ -104,4 +104,18 @@ public class MovieController {
             );
         }
     }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search movies by title", description = "Searches for movies by title (case-insensitive) and returns a list of matching movies")
+    public ResponseEntity<ApiResponse> searchMoviesByTitle(
+            @RequestParam String title) {
+        try {
+            List<MovieResponse> movies = movieService.searchMoviesByTitle(title);
+            return ResponseEntity.ok(new ApiResponse("Success", true, movies));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                    new ApiResponse("Error searching movies: " + e.getMessage(), false, INTERNAL_SERVER_ERROR)
+            );
+        }
+    }
 }

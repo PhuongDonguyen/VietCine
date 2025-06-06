@@ -14,4 +14,5 @@ public interface ITheaterService {
     List<TheaterResponse> getTheatersByBrandAndCity(Integer brandId, String city);
     List<Map<String, String>> getNextDays(int days);
     List<MovieWithShowtimesResponse> getMoviesWithShowtimesByTheater(Integer theaterId, String date);
+    List<TheaterResponse> searchTheatersByName(String name);
 }

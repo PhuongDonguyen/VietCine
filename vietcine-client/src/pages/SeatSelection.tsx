@@ -121,6 +121,7 @@ export default function SeatSelection() {
     const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
     const [seatPrices, setSeatPrices] = useState<SeatPrice[]>([]);
     const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
+    const [movieSlug, setMovieSlug] = useState<string>("");
 
     useEffect(() => {
         const fetchShowtimeDetails = async () => {
@@ -151,7 +152,18 @@ export default function SeatSelection() {
                 if (!movieResponse.data.success) {
                     throw new Error("Could not load movie details");
                 }
-                const movieTitle = movieResponse.data.data.title;
+                const movieData = movieResponse.data.data;
+                const movieTitle = movieData.title;
+                
+                // Lấy slug từ API hoặc tạo từ title
+                const slug = movieData.slug || movieTitle
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .trim();
+                setMovieSlug(slug);
+
 
                 const seatTypesResponse = await axios.get(
                     `http://localhost:8081/api/seattypes?screenId=${screenId}`
@@ -224,7 +236,11 @@ export default function SeatSelection() {
     };
 
     const handleBackToShowtimes = () => {
-        navigate(`/movie-detail/${movieId}`);
+        if (movieSlug) {
+            navigate(`/movies/${movieSlug}`);
+        } else {
+            navigate(`/movie-detail/${movieId}`);
+        }
     };
 
     const handleOpenFoodModal = () => {
