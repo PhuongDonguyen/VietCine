@@ -31,7 +31,7 @@ export function HeroSection() {
                         Khám Phá Phim
                     </button>
                     <button
-                        onClick={() => navigate("/tickets")}
+                        onClick={() => navigate("/book-tickets")}
                         className="px-8 py-3 bg-transparent border-2 border-white text-white text-lg font-semibold rounded-md hover:bg-white/10 transition duration-300">
                         Đặt Vé Ngay
                     </button>
