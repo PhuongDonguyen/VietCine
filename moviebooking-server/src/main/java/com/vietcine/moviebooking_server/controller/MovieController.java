@@ -80,10 +80,7 @@ public class MovieController {
             @PathVariable String slug) {
         try {
             MovieDetailResponse movie = movieService.getMovieDetailBySlug(slug);
-            Map<String, Object> result = new HashMap<>();
-            result.put("data", movie);
-
-            return ResponseEntity.ok(new ApiResponse("Success", true, result));
+            return ResponseEntity.ok(new ApiResponse("Success", true, movie));
         } catch (Exception e) {
             return ResponseEntity.status(404).body(
                     new ApiResponse("Movie not found: " + e.getMessage(), false, null)
