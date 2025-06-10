@@ -147,6 +147,7 @@ public class TheaterService implements ITheaterService {
                 movieWithShowtimes.setTitle(movie.getTitle());
                 movieWithShowtimes.setPosterUrl(movie.getPosterUrl());
                 movieWithShowtimes.setRating(movie.getRating());
+                movieWithShowtimes.setTrailerUrl(movie.getTrailerUrl());
                 movieWithShowtimes.setDuration(movie.getDuration());
                 movieWithShowtimes.setSlug(movie.getSlug());
                 movieWithShowtimes.setGenres(new ArrayList<>(movie.getGenres()));

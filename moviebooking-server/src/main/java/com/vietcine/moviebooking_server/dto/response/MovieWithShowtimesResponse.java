@@ -16,6 +16,7 @@ public class MovieWithShowtimesResponse {
     private String title;
     private String posterUrl;
     private Double rating;
+    private String trailerUrl;
     private Integer duration;
     private String slug;
     private List<GenreResponse> genres;
