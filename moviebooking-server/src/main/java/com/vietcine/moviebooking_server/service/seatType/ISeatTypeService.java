@@ -7,8 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.w3c.dom.stylesheets.LinkStyle;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface ISeatTypeService {
-    List<SeatTypeWithPriceResponse> getSeattypesOfScreen(int screenId);
+    List<SeatTypeWithPriceResponse> getSeattypesOfScreen(int screenId, String bookingDate);
 }

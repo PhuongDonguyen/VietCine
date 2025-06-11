@@ -8,6 +8,7 @@ import com.vietcine.moviebooking_server.repository.ISeatTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,8 +18,8 @@ public class SeatTypeService implements ISeatTypeService {
     private ISeatTypeRepository seatTypeRepository;
     
     @Override
-    public List<SeatTypeWithPriceResponse> getSeattypesOfScreen(int screenId) {
-        List<Object[]> rawSeats = seatTypeRepository.getSeattypesOfScreen(screenId);
+    public List<SeatTypeWithPriceResponse> getSeattypesOfScreen(int screenId, String bookingDate) {
+        List<Object[]> rawSeats = seatTypeRepository.getSeattypesOfScreen(screenId, bookingDate);
 
         return rawSeats.stream().map(row -> new SeatTypeWithPriceResponse(
                 (int) row[0],              // SeatTypeId
