@@ -1,5 +1,6 @@
 package com.vietcine.moviebooking_server.controller;
 
+import com.vietcine.moviebooking_server.dto.request.UpdatePasswordRequest;
 import com.vietcine.moviebooking_server.dto.response.ApiResponse;
 import com.vietcine.moviebooking_server.dto.response.UserResponse;
 import com.vietcine.moviebooking_server.service.user.UserService;
@@ -79,6 +80,21 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(404).body(
                     new ApiResponse<UserResponse>("User not found: " + e.getMessage(), false, null)
+            );
+        }
+    }
+
+    @PostMapping("/{userId}/password")
+    @Operation(summary = "Update user password", description = "Updates the password for a user")
+    public ResponseEntity<ApiResponse> updateUserPassword(
+            @PathVariable Long userId,
+            @RequestBody UpdatePasswordRequest updatePasswordRequest) {
+        try {
+            userService.updateUserPassword(userId, updatePasswordRequest);
+            return ResponseEntity.ok(new ApiResponse("Password updated successfully", true));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(
+                    new ApiResponse("Failed to update password: " + e.getMessage(), false)
             );
         }
     }

@@ -3,6 +3,7 @@ package com.vietcine.moviebooking_server.service.user;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.vietcine.moviebooking_server.dto.request.SignupRequest;
+import com.vietcine.moviebooking_server.dto.request.UpdatePasswordRequest;
 import com.vietcine.moviebooking_server.dto.response.UserAuthenticationResponse;
 import com.vietcine.moviebooking_server.dto.response.UserResponse;
 import com.vietcine.moviebooking_server.entity.User;
@@ -124,5 +125,15 @@ public class UserService {
 
     public List<User> getAllUser() {
         return userRepository.findAll();
+    }
+
+    public void updateUserPassword(Long userId, UpdatePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DataIntegrityViolationException("Không tìm thấy người dùng với ID: " + userId));
+        if (passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu cũ không chính xác");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

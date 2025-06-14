@@ -39,4 +39,6 @@ public class Food {
     @Column(name = "Price", nullable = false)
     private Integer price;
 
+    @Column(name = "Image")
+    private String image;
 }

@@ -10,4 +10,5 @@ public class FoodResponse {
     private String foodName;
     private String description;
     private Integer price;
+    private String image;
 }
