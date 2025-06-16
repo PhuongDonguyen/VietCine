@@ -14,7 +14,7 @@ public class WebConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // Allow all endpoints
                         .allowedOrigins("*") // Allow the React Admin domain
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow HTTP methods
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // Allow HTTP methods
                         .allowedHeaders("*") // Allow all headers
                         .allowCredentials(false); // Allow credentials if needed
             }

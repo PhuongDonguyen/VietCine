@@ -9,6 +9,8 @@ import lombok.ToString;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -16,8 +18,19 @@ import java.time.LocalDate;
 @Entity
 public class FoodOrder {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "FoodOrderId", nullable = false)
     private Integer id;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "UserId", nullable = false)
+    private User user;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "TheaterId", nullable = false)
+    private Theater theater;
 
     @NotNull
     @Column(name = "ReceiveDate", nullable = false)
@@ -40,12 +53,15 @@ public class FoodOrder {
 
     @NotNull
     @Column(name = "IsActive", nullable = false)
-    private Boolean isActive = false;
+    private Boolean isActive = true;
 
     @Size(max = 100)
     @NotNull
     @Nationalized
     @Column(name = "Status", nullable = false, length = 100)
     private String status;
+
+    @OneToMany(mappedBy = "foodOrder")
+    private Set<FoodOrderDetail> foodOrderDetails = new LinkedHashSet<>();
 
 }
