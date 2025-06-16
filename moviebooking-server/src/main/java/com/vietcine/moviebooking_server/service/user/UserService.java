@@ -130,7 +130,7 @@ public class UserService {
     public void updateUserPassword(Long userId, UpdatePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataIntegrityViolationException("Không tìm thấy người dùng với ID: " + userId));
-        if (passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Mật khẩu cũ không chính xác");
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));

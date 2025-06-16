@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/**").permitAll()
                         .requestMatchers("/api/vouchers/**").permitAll()
                         .requestMatchers("/api/vnpay-payment/**").permitAll()
+                        .requestMatchers("/api/users/{userId}/password").authenticated()
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
