@@ -4,6 +4,7 @@ import com.vietcine.moviebooking_server.dto.request.BookingRequest;
 import com.vietcine.moviebooking_server.dto.request.BookingUpdateRequest;
 import com.vietcine.moviebooking_server.dto.response.ApiResponse;
 import com.vietcine.moviebooking_server.dto.response.BookingDetailResponse;
+import com.vietcine.moviebooking_server.dto.response.BookingHistoryResponse;
 import com.vietcine.moviebooking_server.dto.response.BookingResponse;
 import com.vietcine.moviebooking_server.entity.Booking;
 import com.vietcine.moviebooking_server.service.booking.BookingService;
@@ -64,6 +65,27 @@ public class BookingController {
             List<BookingDetailResponse> bookings = bookingService.getUserBookings(userId);
             return ResponseEntity.ok(new ApiResponse("User bookings retrieved successfully", true, bookings));
         } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("An error occurred: " + e.getMessage(), false, null));
+        }
+    }
+    @GetMapping("bookinghistory/user/{userId}")
+    public ResponseEntity<ApiResponse> getUserBookingHistory(@PathVariable Integer userId){
+        try {
+            List<BookingHistoryResponse> bookingHistoryResponses = bookingService.getBookingHistorys(userId);
+            return ResponseEntity.ok(new ApiResponse("User bookings history", true, bookingHistoryResponses));
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("An error occurred: " + e.getMessage(), false, null));
+        }
+    }
+
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<ApiResponse> getBooking(@PathVariable Integer bookingId){
+        try {
+            BookingDetailResponse bookingDetailResponse = bookingService.getBookingById(bookingId);
+            return ResponseEntity.ok(new ApiResponse("Booking retrieved successfully" , true, bookingDetailResponse));
+        } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("An error occurred: " + e.getMessage(), false, null));
         }

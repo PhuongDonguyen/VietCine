@@ -8,7 +8,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface FoodOrderMapper {
     @Mapping(source = "user.id", target = "userId")
-    @Mapping(source = "theater.id", target = "theaterId")
     @Mapping(source = "payment.id", target = "paymentId")
     FoodOrderResponse toFoodOrderResponse(FoodOrder foodOrder);
 } 

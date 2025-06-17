@@ -1,5 +1,6 @@
 package com.vietcine.moviebooking_server.dto.response;
 
+import com.vietcine.moviebooking_server.entity.Movie;
 import lombok.*;
 
 import java.time.Instant;
@@ -14,7 +15,8 @@ import java.util.Set;
 public class BookingDetailResponse {
     private Integer id;
     private Integer userId;
-    private Integer showtimeId;
+    private ShowtimeResponse showtime;
+    private MovieResponse movie;
     private Instant bookingDate;
     private Integer total;
     private String status;

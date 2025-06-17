@@ -5,9 +5,12 @@ import com.vietcine.moviebooking_server.dto.request.BookingRequest;
 import com.vietcine.moviebooking_server.dto.request.BookingSeatDTO;
 import com.vietcine.moviebooking_server.dto.request.BookingUpdateRequest;
 import com.vietcine.moviebooking_server.dto.response.BookingDetailResponse;
+import com.vietcine.moviebooking_server.dto.response.BookingHistoryResponse;
 import com.vietcine.moviebooking_server.dto.response.BookingResponse;
 import com.vietcine.moviebooking_server.entity.*;
 import com.vietcine.moviebooking_server.mapper.BookingMapper;
+import com.vietcine.moviebooking_server.mapper.MovieMapper;
+import com.vietcine.moviebooking_server.mapper.ShowtimeMapper;
 import com.vietcine.moviebooking_server.repository.*;
 import com.vietcine.moviebooking_server.service.mailer.EmailService;
 import lombok.AllArgsConstructor;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,6 +63,14 @@ public class BookingService implements IBookingService {
 
     @Autowired
     private BookingMapper bookingMapper;
+
+    @Autowired
+    private IMovieRepository movieRepository;
+
+    @Autowired
+    private MovieMapper movieMapper;
+    @Autowired
+    private ShowtimeMapper showtimeMapper;
 
     @Override
 //    @Transactional
@@ -138,7 +150,7 @@ public class BookingService implements IBookingService {
         return bookingMapper.toBookingResponse(newBooking);
     }
 
-//    @Transactional
+    @Transactional
     public BookingResponse updateBooking(Integer id, BookingUpdateRequest updateRequest) {
         // Find existing booking
         Booking booking = bookingRepository.findById(id)
@@ -202,10 +214,13 @@ public class BookingService implements IBookingService {
 
     @Transactional
     public void markVoucherUserAsUsed(Integer voucherUserId, Boolean isUsed) {
+        System.out.println("Marking VoucherUserId: " + voucherUserId + " as isUsed: " + isUsed);
         VoucherUser voucherUser = voucherUserRepository.findById(voucherUserId)
                 .orElseThrow(() -> new IllegalArgumentException("VoucherUser not found with ID: " + voucherUserId));
+        System.out.println("Current isUsed before update: " + voucherUser.getIsUsed());
         voucherUser.setIsUsed(isUsed);
-        voucherUserRepository.save(voucherUser);
+        VoucherUser savedVoucherUser = voucherUserRepository.save(voucherUser);
+        System.out.println("VoucherUser updated successfully: ID = " + voucherUserId + ", isUsed = " + savedVoucherUser.getIsUsed());
     }
 
     @Override
@@ -225,4 +240,35 @@ public class BookingService implements IBookingService {
                 })
                 .toList();
     }
+
+    @Override
+    public List<BookingHistoryResponse> getBookingHistorys(Integer userId) {
+        List<Booking> bookings = bookingRepository.findByUserIdAndIsActiveTrue(userId);
+        Collections.reverse(bookings);
+
+        return bookings.stream()
+                .filter(booking -> !"pending".equalsIgnoreCase(booking.getStatus())) // bỏ booking có status là "pending"
+                .map(booking -> {
+                    BookingHistoryResponse response = new BookingHistoryResponse();
+                    response.setBookingId(booking.getId());
+                    response.setMovieName(booking.getShowtime().getMovie().getTitle());
+                    response.setPosterUrl(booking.getShowtime().getMovie().getPosterUrl());
+                    response.setTheaterName(booking.getShowtime().getScreen().getTheater().getName());
+                    response.setStartTime(booking.getShowtime().getStartTime());
+                    return response;
+                })
+                .toList();
+    }
+
+    @Override
+    public BookingDetailResponse getBookingById(Integer bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not exist"));
+        BookingDetailResponse response = bookingMapper.toBookingDetailResponse(booking);
+        Showtime showtime = booking.getShowtime();
+        response.setShowtime(showtimeMapper.toShowtimeDTO(showtime));
+        return response;
+    }
+
+
 }
