@@ -150,7 +150,7 @@ public class BookingService implements IBookingService {
         return bookingMapper.toBookingResponse(newBooking);
     }
 
-    //    @Transactional
+    @Transactional
     public BookingResponse updateBooking(Integer id, BookingUpdateRequest updateRequest) {
         // Find existing booking
         Booking booking = bookingRepository.findById(id)
@@ -214,10 +214,13 @@ public class BookingService implements IBookingService {
 
     @Transactional
     public void markVoucherUserAsUsed(Integer voucherUserId, Boolean isUsed) {
+        System.out.println("Marking VoucherUserId: " + voucherUserId + " as isUsed: " + isUsed);
         VoucherUser voucherUser = voucherUserRepository.findById(voucherUserId)
                 .orElseThrow(() -> new IllegalArgumentException("VoucherUser not found with ID: " + voucherUserId));
+        System.out.println("Current isUsed before update: " + voucherUser.getIsUsed());
         voucherUser.setIsUsed(isUsed);
-        voucherUserRepository.save(voucherUser);
+        VoucherUser savedVoucherUser = voucherUserRepository.save(voucherUser);
+        System.out.println("VoucherUser updated successfully: ID = " + voucherUserId + ", isUsed = " + savedVoucherUser.getIsUsed());
     }
 
     @Override
