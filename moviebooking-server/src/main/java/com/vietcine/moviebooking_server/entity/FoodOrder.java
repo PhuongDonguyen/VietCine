@@ -1,6 +1,5 @@
 package com.vietcine.moviebooking_server.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,14 +9,13 @@ import lombok.ToString;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Getter
 @Setter
 @ToString
 @Entity
-@Table(name = "FoodOrder")
 public class FoodOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,8 +46,9 @@ public class FoodOrder {
     private Integer total;
 
     @Size(max = 10)
+    @NotNull
     @Nationalized
-    @Column(name = "VnpTxnRef", nullable = true, length = 10)
+    @Column(name = "VnpTxnRef", nullable = false, length = 10)
     private String vnpTxnRef;
 
     @NotNull
@@ -62,7 +61,7 @@ public class FoodOrder {
     @Column(name = "Status", nullable = false, length = 100)
     private String status;
 
-    @OneToMany(mappedBy = "foodOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private Set<FoodOrderDetail> foodOrderDetails = new HashSet<>();
+    @OneToMany(mappedBy = "foodOrder")
+    private Set<FoodOrderDetail> foodOrderDetails = new LinkedHashSet<>();
+
 }

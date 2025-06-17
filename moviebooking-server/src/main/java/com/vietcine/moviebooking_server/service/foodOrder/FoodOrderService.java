@@ -7,10 +7,12 @@ import com.vietcine.moviebooking_server.dto.response.FoodOrderResponse;
 import com.vietcine.moviebooking_server.entity.*;
 import com.vietcine.moviebooking_server.mapper.FoodOrderMapper;
 import com.vietcine.moviebooking_server.repository.*;
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -37,14 +39,17 @@ public class FoodOrderService implements IFoodOrderService {
     @Autowired
     private FoodOrderMapper foodOrderMapper;
 
-    @Transactional
     @Override
     public FoodOrderResponse createFoodOrder(FoodOrderRequest foodOrderRequest) {
-        // Validate User, Theater, Payment
+        // Validate User
         User user = userRepository.findById(Long.valueOf(foodOrderRequest.getUserId()))
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + foodOrderRequest.getUserId()));
+
+        // Validate Theater
         Theater theater = theaterRepository.findById(foodOrderRequest.getTheaterId())
                 .orElseThrow(() -> new IllegalArgumentException("Theater not found with ID: " + foodOrderRequest.getTheaterId()));
+
+        // Validate Payment
         Payment payment = paymentRepository.findById(foodOrderRequest.getPaymentId())
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found with ID: " + foodOrderRequest.getPaymentId()));
 
@@ -58,8 +63,13 @@ public class FoodOrderService implements IFoodOrderService {
         newFoodOrder.setPayment(payment);
         newFoodOrder.setIsActive(foodOrderRequest.getIsActive());
         newFoodOrder.setVnpTxnRef(foodOrderRequest.getVnpTxnRef());
+        newFoodOrder.setFoodOrderDetails(new LinkedHashSet<>());
 
-        // Handle multiple food details (1:N relationship)
+        // Save the food order first to generate its ID
+        newFoodOrder = foodOrderRepository.save(newFoodOrder);
+
+        // Handle food details
+        Set<FoodOrderDetail> foodOrderDetails = new LinkedHashSet<>();
         if (foodOrderRequest.getFoodDetails() != null && !foodOrderRequest.getFoodDetails().isEmpty()) {
             for (FoodOrderDetailRequest detailRequest : foodOrderRequest.getFoodDetails()) {
                 Food food = foodRepository.findById(detailRequest.getFoodId())
@@ -69,17 +79,19 @@ public class FoodOrderService implements IFoodOrderService {
                 foodOrderDetail.setFoodOrder(newFoodOrder);
                 foodOrderDetail.setFood(food);
                 foodOrderDetail.setQuantity(detailRequest.getQuantity());
-                newFoodOrder.getFoodOrderDetails().add(foodOrderDetail);
+                foodOrderDetails.add(foodOrderDetail);
             }
+            foodOrderDetailRepository.saveAll(foodOrderDetails);
+            newFoodOrder.setFoodOrderDetails(foodOrderDetails);
         }
 
-        // Save once, cascade will handle FoodOrderDetails
+        // Save the food order again to update relationships
         newFoodOrder = foodOrderRepository.save(newFoodOrder);
 
+        // Map to FoodOrderResponse using MapStruct
         return foodOrderMapper.toFoodOrderResponse(newFoodOrder);
     }
 
-    @Transactional
     @Override
     public FoodOrderResponse updateFoodOrder(Integer id, FoodOrderUpdateRequest updateRequest) {
         // Find existing food order
@@ -103,7 +115,7 @@ public class FoodOrderService implements IFoodOrderService {
         // Save updated food order
         FoodOrder updatedFoodOrder = foodOrderRepository.save(foodOrder);
 
-        // Map to FoodOrderResponse
+        // Map to FoodOrderResponse using MapStruct
         return foodOrderMapper.toFoodOrderResponse(updatedFoodOrder);
     }
-}
+} 

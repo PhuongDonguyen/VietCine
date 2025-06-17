@@ -1,6 +1,5 @@
 package com.vietcine.moviebooking_server.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -11,7 +10,6 @@ import lombok.ToString;
 @Setter
 @ToString
 @Entity
-@Table(name = "FoodOrderDetail")
 public class FoodOrderDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +19,6 @@ public class FoodOrderDetail {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "FoodOrderId", nullable = false)
-    @JsonBackReference
     private FoodOrder foodOrder;
 
     @NotNull
@@ -32,4 +29,5 @@ public class FoodOrderDetail {
     @NotNull
     @Column(name = "Quantity", nullable = false)
     private Integer quantity;
+
 }

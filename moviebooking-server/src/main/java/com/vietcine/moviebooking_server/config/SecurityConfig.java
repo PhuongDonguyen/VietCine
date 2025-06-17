@@ -49,7 +49,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/theaters/**").permitAll()
                         .requestMatchers("/api/food/**").permitAll()
                         .requestMatchers("/api/bookings/**").permitAll()
-                        .requestMatchers("/api/food-orders/**").permitAll()
                         .requestMatchers("/api/vouchers/**").permitAll()
                         .requestMatchers("/api/vnpay-payment/**").permitAll()
                         .requestMatchers("/api/users/{userId}/password").authenticated()

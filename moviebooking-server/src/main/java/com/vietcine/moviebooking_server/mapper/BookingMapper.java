@@ -10,10 +10,12 @@ import java.util.Set;
 @Mapper(componentModel = "spring")
 public interface BookingMapper {
     @Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "showtime.id", target = "showtimeId")
     @Mapping(source = "payment.id", target = "paymentId")
     BookingResponse toBookingResponse(Booking booking);
 
     @Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "showtime.id", target = "showtimeId")
     @Mapping(source = "payment.id", target = "paymentId")
     @Mapping(source = "bookingSeats", target = "bookingSeats")
     @Mapping(source = "bookingFoods", target = "bookingFoods")

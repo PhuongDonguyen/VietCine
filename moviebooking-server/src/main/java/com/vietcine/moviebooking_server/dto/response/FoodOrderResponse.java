@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public class FoodOrderResponse {
     private Integer id;
     private Integer userId;
-    private TheaterResponse theater;
+    private Integer theaterId;
     private LocalDate receiveDate;
     private Integer paymentId;
     private Integer total;
