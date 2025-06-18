@@ -56,7 +56,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             try {
                 FirebaseToken decodedToken = firebaseAuth.verifyIdToken(token);
                 String email = decodedToken.getEmail();
-                UserDetails userDetails = loadOrCreateUser(email, response);
+                String fullname = decodedToken.getName();
+                UserDetails userDetails = loadOrCreateUser(email, fullname, response);
                 if (userDetails != null) {
                     setAuthentication(userDetails, request);
                     request.setAttribute("firebaseUser", decodedToken); // Preserve Firebase token info if needed
@@ -82,7 +83,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private UserDetails loadOrCreateUser(String email, HttpServletResponse response) throws IOException {
+    private UserDetails loadOrCreateUser(String email, String fullname, HttpServletResponse response) throws IOException {
         try {
             return userDetailsService.loadUserByUsername(email);
         } catch (Exception e) {
@@ -90,7 +91,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             // Auto-create user for Firebase/Google OAuth
             User newUser = new User();
             newUser.setEmail(email);
+            newUser.setFullName(fullname);
             newUser.setRole("USER");
+            newUser.setCreatedAt(new java.util.Date().toInstant());
             userRepository.save(newUser);
             return org.springframework.security.core.userdetails.User.builder()
                     .username(email)
