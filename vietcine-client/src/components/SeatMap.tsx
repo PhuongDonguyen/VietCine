@@ -8,12 +8,6 @@ interface SelectedSeat {
     price?: number;
 }
 
-interface Props {
-    showtimeId: string;
-    selectedSeats: SelectedSeat[];
-    onSeatToggle: (seatId: number, seatNumber: string, seatTypeId: number) => void;
-}
-
 interface Seat {
     seatId: number;
     row: string;
@@ -38,11 +32,17 @@ interface SeatRow {
     seats: Seat[];
 }
 
-export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
+interface Props {
+    showtimeId: string;
+    selectedSeats: SelectedSeat[];
+    seatTypes: SeatType[]; // Add seatTypes to props
+    onSeatToggle: (seatId: number, seatNumber: string, seatTypeId: number) => void;
+}
+
+export function SeatMap({ showtimeId, selectedSeats, seatTypes, onSeatToggle }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [seats, setSeats] = useState<Seat[]>([]);
-    const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
     const [seatRows, setSeatRows] = useState<SeatRow[]>([]);
     const [maxColumns, setMaxColumns] = useState(0);
     const [minColumn, setMinColumn] = useState(1);
@@ -75,24 +75,6 @@ export function SeatMap({ showtimeId, selectedSeats, onSeatToggle }: Props) {
                 // Group seats by row
                 const rows = organizeSeatsIntoRows(seatsData);
                 setSeatRows(rows);
-
-                // Get screenId from the first seat to fetch seat types
-                if (seatsData.length > 0) {
-                    const screenId = seatsData[0].screenId;
-
-                    // Fetch seat types for this screen
-                    const seatTypesResponse = await axios.get(
-                        `http://localhost:8081/api/seattypes?screenId=${screenId}`
-                    );
-
-                    if (!seatTypesResponse.data.success) {
-                        throw new Error("Could not load seat types");
-                    }
-
-                    const seatTypesData = seatTypesResponse.data.data;
-                    console.log("Fetched seat types:", seatTypesData); // Debug log
-                    setSeatTypes(seatTypesData);
-                }
             } catch (err) {
                 console.error("Error fetching seat data:", err);
                 setError("Failed to load seat data");

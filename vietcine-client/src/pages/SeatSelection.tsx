@@ -154,8 +154,7 @@ export default function SeatSelection() {
                 }
                 const movieData = movieResponse.data.data;
                 const movieTitle = movieData.title;
-                
-                // Lấy slug từ API hoặc tạo từ title
+
                 const slug = movieData.slug || movieTitle
                     .toLowerCase()
                     .replace(/[^a-z0-9\s-]/g, '')
@@ -164,17 +163,17 @@ export default function SeatSelection() {
                     .trim();
                 setMovieSlug(slug);
 
-
+                const bookingDate = new Date(showtimeData.startTime).toISOString().split("T")[0];
                 const seatTypesResponse = await axios.get(
-                    `http://localhost:8081/api/seattypes?screenId=${screenId}`
+                    `http://localhost:8081/api/seattypes?screenId=${screenId}&bookingDate=${bookingDate}`
                 );
                 if (!seatTypesResponse.data.success) {
-                    throw new Error("Could not load seat types");
+                    throw new Error("Could not load seat types: " + seatTypesResponse.data.message);
                 }
                 setSeatTypes(seatTypesResponse.data.data);
 
                 const seatPricesResponse = await axios.get(
-                    `http://localhost:8081/api/seatprices?screenId=${screenId}`
+                    `http://localhost:8081/api/seatprices?screenId=${screenId}&bookingDate=${bookingDate}`
                 );
                 if (!seatPricesResponse.data.success) {
                     throw new Error("Could not load seat prices");
@@ -200,7 +199,7 @@ export default function SeatSelection() {
 
                 setShowtime(formattedShowtime);
             } catch (err) {
-                setError("Failed to load showtime details. Please try again later.");
+                setError(`Failed to load showtime details: ${err.message}`);
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -433,6 +432,13 @@ export default function SeatSelection() {
                                 <SeatMap
                                     showtimeId={showtime.id.toString()}
                                     selectedSeats={selectedSeats}
+                                    seatTypes={seatPrices.length > 0 ? seatPrices.map(price => ({
+                                        seatTypeId: price.seatTypeId,
+                                        typeName: price.seatTypeName,
+                                        price: price.price,
+                                        priceIncrease: price.priceIncrease,
+                                        totalPrice: price.totalPrice
+                                    })) : seatTypes}
                                     onSeatToggle={handleSeatToggle}
                                 />
                             </div>

@@ -94,11 +94,12 @@ export default function MovieDetail() {
                 setError(null);
                 const response = await axios.get(`http://localhost:8081/api/movies/${slug}`);
                 if (response.data.success) {
-                    const movieData = response.data.data.data;
+                    const movieData = response.data.data;
                     setMovie(movieData);
+                    console.log({movieData});
 
                     // Process cast data directly from the movie response
-                    if (movieData.movieCasts && movieData.movieCasts.length > 0) {
+                    if (movieData?.movieCasts && movieData.movieCasts.length > 0) {
                         const formattedCast = movieData.movieCasts.map((castItem: MovieCast) => ({
                             castId: castItem.cast.id,
                             actorName: castItem.cast.name,
