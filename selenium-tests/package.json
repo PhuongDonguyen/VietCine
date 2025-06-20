@@ -6,9 +6,9 @@
     "test": "mocha tests/*.test.js"
   },
   "dependencies": {
-    "selenium-webdriver": "^4.11.1",
-    "mocha": "^10.2.0",
-    "chai": "^4.3.10"
+    "chai": "^4.5.0",
+    "mocha": "^10.8.2",
+    "selenium-webdriver": "^4.33.0"
   },
   "author": "",
   "license": "ISC"

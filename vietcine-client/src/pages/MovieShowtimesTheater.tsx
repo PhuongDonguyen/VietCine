@@ -159,7 +159,9 @@ export default function MovieShowtimes() {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get("http://localhost:8081/api/theaters/cities");
+      const response = await axios.get(
+        "http://localhost:8081/api/theaters/cities"
+      );
       if (response.data.success) {
         setCities(response.data.data);
         const defaultCity = response.data.data.includes("Hồ Chí Minh")
@@ -184,7 +186,9 @@ export default function MovieShowtimes() {
       setBrandsLoaded(false);
 
       const response = await axios.get(
-        `http://localhost:8081/api/theater-brands?city=${encodeURIComponent(selectedCity)}`
+        `http://localhost:8081/api/theater-brands?city=${encodeURIComponent(
+          selectedCity
+        )}`
       );
       if (response.data.success) {
         setCinemaBrands(response.data.data);
@@ -207,30 +211,38 @@ export default function MovieShowtimes() {
       setLoading(true);
       setError(null);
 
-      let url = `http://localhost:8081/api/theaters/all?city=${encodeURIComponent(city)}`;
+      let url = `http://localhost:8081/api/theaters/all?city=${encodeURIComponent(
+        city
+      )}`;
       if (selectedBrand !== "all") {
-        url = `http://localhost:8081/api/theaters?brandId=${selectedBrand}&city=${encodeURIComponent(city)}`;
+        url = `http://localhost:8081/api/theaters?brandId=${selectedBrand}&city=${encodeURIComponent(
+          city
+        )}`;
       }
 
       const response = await axios.get(url);
       if (response.data.success) {
-        const fetchedCinemas: Cinema[] = response.data.data.map((cinema: any) => {
-          const brand = cinemaBrands.find((b) => b.id === cinema.theaterBrandId);
-          return {
-            id: cinema.id,
-            name: cinema.name,
-            logo: cinema.theaterBrand.logo || "/placeholder.svg",
-            slug: cinema.name.toLowerCase().replace(/\s+/g, "-"),
-            theaterBrand: brand || {
-              id: cinema.theaterBrand.id,
-              theaterBrandName: cinema.theaterBrand.theaterBrandName,
-              logo: cinema.theaterBrand.logo,
-            },
-            address: cinema.address,
-            city: cinema.city,
-            totalScreens: cinema.totalScreens,
-          };
-        });
+        const fetchedCinemas: Cinema[] = response.data.data.map(
+          (cinema: any) => {
+            const brand = cinemaBrands.find(
+              (b) => b.id === cinema.theaterBrandId
+            );
+            return {
+              id: cinema.id,
+              name: cinema.name,
+              logo: cinema.theaterBrand.logo || "/placeholder.svg",
+              slug: cinema.name.toLowerCase().replace(/\s+/g, "-"),
+              theaterBrand: brand || {
+                id: cinema.theaterBrand.id,
+                theaterBrandName: cinema.theaterBrand.theaterBrandName,
+                logo: cinema.theaterBrand.logo,
+              },
+              address: cinema.address,
+              city: cinema.city,
+              totalScreens: cinema.totalScreens,
+            };
+          }
+        );
         setCinemas(fetchedCinemas);
       } else {
         setError("Không thể tải danh sách rạp chiếu phim");
@@ -270,7 +282,9 @@ export default function MovieShowtimes() {
 
       // Log date to ensure correct format
       console.log("Sending date to API:", selectedDate);
-      const url = `http://localhost:8081/api/theaters/${selectedCinema}/movies?date=${encodeURIComponent(selectedDate)}`;
+      const url = `http://localhost:8081/api/theaters/${selectedCinema}/movies?date=${encodeURIComponent(
+        selectedDate
+      )}`;
       const response = await axios.get(url);
 
       if (response.data.success) {
@@ -304,7 +318,8 @@ export default function MovieShowtimes() {
 
     if (selectedBrand !== "all") {
       filteredCinemas = filteredCinemas.filter(
-        (cinema) => cinema.theaterBrand.id.toString() === selectedBrand.toString()
+        (cinema) =>
+          cinema.theaterBrand.id.toString() === selectedBrand.toString()
       );
     }
 
@@ -422,7 +437,9 @@ export default function MovieShowtimes() {
                 </div>
               </div>
               <div className="mt-6">
-                <h3 className="text-white text-lg mb-3">Hệ thống rạp chiếu phim</h3>
+                <h3 className="text-white text-lg mb-3">
+                  Hệ thống rạp chiếu phim
+                </h3>
                 <div className="flex flex-wrap gap-3 items-center mb-6">
                   <button
                     onClick={() => handleBrandChange("all")}
@@ -447,6 +464,7 @@ export default function MovieShowtimes() {
                   {cinemaBrands.map((brand) => (
                     <button
                       key={brand.id}
+                      data-testid={`brand-btn-${brand.id}`}
                       onClick={() => handleBrandChange(brand.id)}
                       className={`flex flex-col items-center p-2 rounded-md transition duration-300 ${
                         selectedBrand === brand.id
@@ -461,7 +479,9 @@ export default function MovieShowtimes() {
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>
-                      <span className="text-xs text-center">{brand.theaterBrandName.split(" ")[0]}</span>
+                      <span className="text-xs text-center">
+                        {brand.theaterBrandName.split(" ")[0]}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -473,7 +493,10 @@ export default function MovieShowtimes() {
                   {selectedBrand !== "all" ? (
                     <img
                       src={getSelectedBrandLogo() || "/placeholder.svg"}
-                      alt={`${cinemaBrands.find((b) => b.id === selectedBrand)?.theaterBrandName} Logo`}
+                      alt={`${
+                        cinemaBrands.find((b) => b.id === selectedBrand)
+                          ?.theaterBrandName
+                      } Logo`}
                       className="w-12 h-12 object-contain bg-white rounded-md p-1 mr-4"
                     />
                   ) : (
@@ -491,13 +514,18 @@ export default function MovieShowtimes() {
                   <div>
                     <h2 className="text-xl font-bold text-white">
                       {selectedBrand !== "all"
-                        ? `Rạp chiếu phim ${cinemaBrands.find((b) => b.id === selectedBrand)?.theaterBrandName}`
+                        ? `Rạp chiếu phim ${
+                            cinemaBrands.find((b) => b.id === selectedBrand)
+                              ?.theaterBrandName
+                          }`
                         : "Lịch chiếu phim - Tất cả hệ thống rạp"}
                     </h2>
                   </div>
                 </div>
                 <div className="mb-8">
-                  <h3 className="text-white text-lg mb-4">Chọn rạp để xem lịch chiếu</h3>
+                  <h3 className="text-white text-lg mb-4">
+                    Chọn rạp để xem lịch chiếu
+                  </h3>
                   {loading ? (
                     <div className="flex justify-center items-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
@@ -507,6 +535,7 @@ export default function MovieShowtimes() {
                       {filterCinemasBySearch().map((cinema) => (
                         <button
                           key={cinema.id}
+                          data-testid={`cinema-btn-${cinema.id}`}
                           onClick={() => handleCinemaChange(cinema.id)}
                           className="flex items-center p-4 rounded-lg transition duration-300 hover:bg-white/10"
                         >
@@ -519,7 +548,9 @@ export default function MovieShowtimes() {
                           </div>
                           <div className="text-left">
                             <h3 className="text-white">{cinema.name}</h3>
-                            <p className="text-gray-400 text-sm">{cinema.address || "Địa chỉ không có sẵn"}</p>
+                            <p className="text-gray-400 text-sm">
+                              {cinema.address || "Địa chỉ không có sẵn"}
+                            </p>
                           </div>
                           <div className="ml-auto">
                             <svg
@@ -564,7 +595,9 @@ export default function MovieShowtimes() {
                     <p className="text-gray-400 text-sm mt-1">
                       {selectedCinemaDetails?.address || ""}
                       {selectedCinemaDetails?.address && (
-                        <span className="text-blue-400 ml-2 cursor-pointer">[Bản đồ]</span>
+                        <span className="text-blue-400 ml-2 cursor-pointer">
+                          [Bản đồ]
+                        </span>
                       )}
                     </p>
                   </div>
@@ -592,6 +625,7 @@ export default function MovieShowtimes() {
                   {dates.map((dateInfo, index) => (
                     <button
                       key={index}
+                      data-testid={`date-btn-${dateInfo.date}`}
                       onClick={() => handleDateChange(dateInfo.date)}
                       className={`flex flex-col items-center justify-center py-3 rounded-lg transition duration-300 ${
                         selectedDate === dateInfo.date
@@ -611,7 +645,9 @@ export default function MovieShowtimes() {
                       <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                       <div className="w-3 h-3 bg-white rounded-full animate-bounce"></div>
                     </div>
-                    <div className="text-white">Đang tải lịch chiếu phim...</div>
+                    <div className="text-white">
+                      Đang tải lịch chiếu phim...
+                    </div>
                   </div>
                 ) : error ? (
                   <div className="flex justify-center items-center h-64">
@@ -619,12 +655,17 @@ export default function MovieShowtimes() {
                   </div>
                 ) : movies.length === 0 ? (
                   <div className="flex justify-center items-center h-64">
-                    <div className="text-gray-400">Không có lịch chiếu phim nào cho ngày đã chọn</div>
+                    <div className="text-gray-400">
+                      Không có lịch chiếu phim nào cho ngày đã chọn
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-8">
                     {movies.map((movie) => (
-                      <div key={movie.id} className="bg-gray-900/80 rounded-lg p-6">
+                      <div
+                        key={movie.id}
+                        className="bg-gray-900/80 rounded-lg p-6"
+                      >
                         <div className="flex flex-col md:flex-row gap-6">
                           <div className="flex-shrink-0 w-full md:w-64">
                             <div
@@ -646,9 +687,13 @@ export default function MovieShowtimes() {
                             </div>
                           </div>
                           <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-2">{movie.title}</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">
+                              {movie.title}
+                            </h3>
                             <div className="text-gray-400 mb-4">
-                              {movie.genres.map((genre) => genre.name).join(", ")}
+                              {movie.genres
+                                .map((genre) => genre.name)
+                                .join(", ")}
                             </div>
                             <div className="mb-3 text-white font-medium">
                               {movie.showtimes.length > 0 ? "2D Phụ đề" : ""}
@@ -657,14 +702,22 @@ export default function MovieShowtimes() {
                               {movie.showtimes.map((showtime) => (
                                 <button
                                   key={showtime.id}
+                                  data-testid={`showtime-btn-${showtime.id}`}
                                   className="bg-gray-800 hover:bg-gray-700 transition duration-300 rounded-lg p-3 text-center"
-                                  onClick={() => handleBookTicket(showtime.id, movie.id)}
+                                  onClick={() =>
+                                    handleBookTicket(showtime.id, movie.id)
+                                  }
                                 >
                                   <div className="text-white font-medium">
-                                    {extractTime(showtime.startTime)} - {extractTime(showtime.endTime)}
+                                    {extractTime(showtime.startTime)} -{" "}
+                                    {extractTime(showtime.endTime)}
                                   </div>
-                                  <div className="text-gray-400 text-xs mt-1">{showtime.screen.screenNumber}</div>
-                                  <div className="text-gray-500 text-xs">{showtime.screen.totalSeats} ghế</div>
+                                  <div className="text-gray-400 text-xs mt-1">
+                                    {showtime.screen.screenNumber}
+                                  </div>
+                                  <div className="text-gray-500 text-xs">
+                                    {showtime.screen.totalSeats} ghế
+                                  </div>
                                 </button>
                               ))}
                             </div>

@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, ChevronDown, LogOut, Ticket, Settings, User as UserIcon } from "lucide-react";
+import {
+  User,
+  ChevronDown,
+  LogOut,
+  Ticket,
+  Settings,
+  User as UserIcon,
+} from "lucide-react";
 import { AuthContext } from "../context/authContext";
 
 interface Props {
@@ -17,7 +24,10 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -35,13 +45,19 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
     navigate("/");
   };
 
-  const renderDropdownItem = (label: string, icon: JSX.Element, path: string) => (
+  const renderDropdownItem = (
+    label: string,
+    icon: JSX.Element,
+    path: string,
+    testid?: string
+  ) => (
     <button
       className="flex items-center w-full px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 transition duration-150"
       onClick={() => {
         setIsOpen(false);
         navigate(path);
       }}
+      {...(testid ? { "data-testid": testid } : {})}
     >
       {icon}
       {label}
@@ -50,8 +66,9 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
 
   return (
     <nav
-      className={`w-full py-6 ${fixedTop ? "fixed top-0 left-0 z-50" : "relative"
-        } ${transparent ? "bg-transparent" : "bg-black/90"}`}
+      className={`w-full py-6 ${
+        fixedTop ? "fixed top-0 left-0 z-50" : "relative"
+      } ${transparent ? "bg-transparent" : "bg-black/90"}`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
         {/* Logo */}
@@ -89,6 +106,7 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
               <button
                 className="flex items-center space-x-2 focus:outline-none"
                 onClick={() => setIsOpen(!isOpen)}
+                data-testid="profile-title"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-600">
                   {user.avatar ? (
@@ -112,7 +130,8 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
                   {renderDropdownItem(
                     "Tài khoản",
                     <UserIcon className="h-4 w-4 mr-2" />,
-                    "/profile"
+                    "/profile",
+                    "profile-account-btn"
                   )}
                   {renderDropdownItem(
                     "Vé của tôi",
@@ -128,6 +147,7 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
                   <button
                     className="flex items-center w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-800 transition duration-150"
                     onClick={handleLogout}
+                    data-testid="logout-btn"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Đăng xuất
@@ -139,6 +159,7 @@ export function NavBar({ transparent = true, fixedTop = true }: Props) {
             <button
               className="px-4 py-1 text-white border border-white rounded-md hover:bg-white hover:text-black transition duration-300"
               onClick={() => navigate("/login")}
+              data-testid="login-navbar-btn"
             >
               Đăng nhập
             </button>
